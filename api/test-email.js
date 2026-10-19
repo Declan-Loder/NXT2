@@ -2,7 +2,7 @@
 fetch('/api/test-email', {
   method: 'POST',
   headers: {
-    'x-test-secret': 'YOUR_TEST_SECRET'
+    'x-test-secret': 're_ALtni1Vi_BrZaphA88pBJumW6BfVyYZ1n'
   }
 })
 .then(async response => {
