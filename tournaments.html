@@ -129,7 +129,6 @@
     }
   </style>
 </head>
-
 <body>
   <div class="wrap">
 
@@ -218,10 +217,9 @@
         <div class="qualification-note">
           <strong>How it works</strong>
           <p class="muted" style="margin:8px 0 0">
-            The top two players from each group qualify for the
-            knockout stage. Eight players compete in the quarter-finals.
-            Winners advance to the semi-finals, then the final to
-            determine the champion.
+            Group stage complete. The top two from each group have qualified.
+            Eight players compete in the quarter-finals. Winners advance to the
+            semi-finals, then the Grand Final to determine the champion.
           </p>
         </div>
 
@@ -230,24 +228,21 @@
           <div class="kicker">Round 1</div>
           <h3>Quarter-finals</h3>
 
-          <div class="knockout-grid">
+          <div class="knockout-grid" id="quarter-finals">
 
             <article class="knockout-match">
               <div class="match-label">
                 <span>Quarter-final 1</span>
                 <span>Group A vs Group B</span>
               </div>
-
               <div class="match-player">
-                <strong>antisocialicon</strong>
+                <strong data-seed="A1">mrmo1406</strong>
                 <span class="player-seed">A1</span>
               </div>
-
               <div class="match-player">
-                <strong>shaqlebussdown</strong>
+                <strong data-seed="B2">shaqlebussdown</strong>
                 <span class="player-seed">B2</span>
               </div>
-
               <span class="match-status">Awaiting result</span>
             </article>
 
@@ -256,17 +251,14 @@
                 <span>Quarter-final 2</span>
                 <span>Group B vs Group A</span>
               </div>
-
               <div class="match-player">
-                <strong>CreamySuspect</strong>
+                <strong data-seed="B1">CreamySuspect</strong>
                 <span class="player-seed">B1</span>
               </div>
-
               <div class="match-player">
-                <strong>LilScooteryard</strong>
+                <strong data-seed="A2">antisocialicon</strong>
                 <span class="player-seed">A2</span>
               </div>
-
               <span class="match-status">Awaiting result</span>
             </article>
 
@@ -275,17 +267,14 @@
                 <span>Quarter-final 3</span>
                 <span>Group C vs Group D</span>
               </div>
-
               <div class="match-player">
-                <strong>creamilicious91</strong>
+                <strong data-seed="C1">creamilicious91</strong>
                 <span class="player-seed">C1</span>
               </div>
-
               <div class="match-player">
-                <strong>Funnyjump160</strong>
+                <strong data-seed="D2">Funnyjump160</strong>
                 <span class="player-seed">D2</span>
               </div>
-
               <span class="match-status">Awaiting result</span>
             </article>
 
@@ -294,17 +283,14 @@
                 <span>Quarter-final 4</span>
                 <span>Group D vs Group C</span>
               </div>
-
               <div class="match-player">
-                <strong>jezz_gitau1</strong>
+                <strong data-seed="D1">jezz_gitau1</strong>
                 <span class="player-seed">D1</span>
               </div>
-
               <div class="match-player">
-                <strong>JustJxred</strong>
+                <strong data-seed="C2">JustJxred</strong>
                 <span class="player-seed">C2</span>
               </div>
-
               <span class="match-status">Awaiting result</span>
             </article>
 
@@ -323,17 +309,14 @@
                 <span>Semi-final 1</span>
                 <span>Winners advance</span>
               </div>
-
               <div class="match-player">
                 <strong>Winner of Quarter-final 1</strong>
                 <span class="match-score">—</span>
               </div>
-
               <div class="match-player">
                 <strong>Winner of Quarter-final 2</strong>
                 <span class="match-score">—</span>
               </div>
-
               <span class="match-status">Awaiting qualifiers</span>
             </article>
 
@@ -342,17 +325,14 @@
                 <span>Semi-final 2</span>
                 <span>Winners advance</span>
               </div>
-
               <div class="match-player">
                 <strong>Winner of Quarter-final 3</strong>
                 <span class="match-score">—</span>
               </div>
-
               <div class="match-player">
                 <strong>Winner of Quarter-final 4</strong>
                 <span class="match-score">—</span>
               </div>
-
               <span class="match-status">Awaiting qualifiers</span>
             </article>
 
@@ -369,17 +349,14 @@
               <span>Season 1 Final</span>
               <span>One champion</span>
             </div>
-
             <div class="match-player">
               <strong>Winner of Semi-final 1</strong>
               <span class="match-score">—</span>
             </div>
-
             <div class="match-player">
               <strong>Winner of Semi-final 2</strong>
               <span class="match-score">—</span>
             </div>
-
             <span class="match-status">Awaiting finalists</span>
           </article>
 
@@ -421,7 +398,6 @@
             <div class="kicker">Enter the arena</div>
             <h2>Register for free</h2>
           </div>
-
           <p>
             Selected:
             <strong id="selected-tournament-name">
@@ -482,7 +458,6 @@
               Brackets, voice channels, results and announcements
               drop first in Discord.
             </p>
-
             <a class="button"
                href="https://discord.gg/Bxsw3Aam2"
                target="_blank"
@@ -529,7 +504,6 @@
         <span>Total</span>
         <span id="cart-total-value">R 0.00</span>
       </div>
-
       <a class="button"
          href="shop.html#checkout"
          style="width:100%"
@@ -541,10 +515,8 @@
 
   <div class="toast" id="toast" role="status"></div>
 
-  <!-- EXISTING SITE SCRIPTS -->
   <script src="data.js"></script>
   <script src="app.js"></script>
 
 </body>
 </html>
-```
