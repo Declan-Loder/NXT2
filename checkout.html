@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkout — NXT Supply</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="nav">
+      <a class="brand" href="index.html">NXT<span>.</span></a>
+      <nav class="links">
+        <a href="index.html">Home</a>
+        <a href="tournaments.html">Tournaments</a>
+        <a href="creators.html">Creators</a>
+        <a href="creator-login.html">Creator portal</a>
+        <a href="collab.html">Collab</a>
+        <a href="shop.html" class="active">Shop</a>
+        <a href="sponsors.html">Sponsors</a>
+      </nav>
+      <div class="navright">
+        <button class="button outline cart-btn" onclick="openCart()">
+          Cart <span class="cart-count" style="display:none">0</span>
+        </button>
+        <a class="button" href="https://discord.gg/Bxsw3Aam2" target="_blank" rel="noreferrer">Join Discord ↗</a>
+        <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="mobile-menu" id="mobile-menu">
+      <a href="index.html" onclick="closeMenu()">Home</a>
+      <a href="tournaments.html" onclick="closeMenu()">Tournaments</a>
+      <a href="creators.html" onclick="closeMenu()">Creators</a>
+      <a href="collab.html" onclick="closeMenu()">Collab</a>
+      <a href="shop.html" onclick="closeMenu()">Shop</a>
+      <a href="sponsors.html" onclick="closeMenu()">Sponsors</a>
+      <div class="mobile-cta">
+        <a class="button" href="https://discord.gg/Bxsw3Aam2" target="_blank" rel="noreferrer">Join Discord ↗</a>
+        <button class="button outline" onclick="closeMenu(); openCart()">Open Cart</button>
+      </div>
+    </div>
+
+    <main>
+      <div class="page-hero">
+        <div class="kicker">Checkout</div>
+        <h1>Complete your order</h1>
+        <p class="muted" style="max-width:420px">Secure payment via PayFast. Fill in your details and pay online. We ship after payment clears.</p>
+      </div>
+
+      <section class="section" style="border-top:none;padding-top:8px">
+        <div class="checkout-grid">
+          <form id="payfast-checkout-form" onsubmit="return handlePayFastCheckout(event)">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Full name</label>
+                <input type="text" id="pf-name" name="name" required placeholder="Your name">
+              </div>
+              <div class="form-group">
+                <label>Phone / WhatsApp</label>
+                <input type="tel" id="pf-phone" name="phone" required placeholder="+27 ...">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="pf-email" name="email" required placeholder="you@email.com">
+            </div>
+            <div class="form-group">
+              <label>Delivery address</label>
+              <textarea id="pf-address" name="address" rows="3" required placeholder="Street, suburb, city, postal code"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Size / colour notes (optional)</label>
+              <textarea id="pf-notes" name="notes" rows="2" placeholder="e.g. Hoodie Size L, Cap one-size"></textarea>
+            </div>
+            <button type="submit" class="button" style="width:100%;padding:14px" id="pay-btn">Pay securely with PayFast ↗</button>
+            <p class="muted" style="margin-top:12px;font-size:12px">You will be redirected to PayFast to complete payment.</p>
+          </form>
+
+          <div class="panel order-summary">
+            <h3 style="margin-top:0">Your order</h3>
+            <div id="checkout-items-summary" class="muted" style="font-size:13px;line-height:1.7;margin:12px 0">Loading cart...</div>
+            <div style="display:flex;justify-content:space-between;margin-top:16px;padding-top:12px;border-top:1px solid var(--line);font-weight:700;font-size:16px">
+              <span>Total</span>
+              <span id="checkout-total">R 0.00</span>
+            </div>
+            <a href="shop.html" class="button outline" style="width:100%;margin-top:16px;display:block;text-align:center">← Back to shop</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <a class="brand" href="index.html">NXT<span>.</span></a>
+      <span>Creators. Competition. Community.</span>
+      <span>© 2026 NXT · South Africa</span>
+    </footer>
+  </div>
+
+  <div class="cart-overlay" id="cart-overlay" onclick="closeCart()"></div>
+  <div class="cart-drawer" id="cart-drawer">
+    <div class="cart-header">
+      <strong>Your Cart</strong>
+      <button class="outline" onclick="closeCart()" style="padding:6px 12px">Close</button>
+    </div>
+    <div class="cart-body" id="cart-body"></div>
+    <div class="cart-footer">
+      <div class="cart-total">
+        <span>Total</span>
+        <span id="cart-total-value">R 0.00</span>
+      </div>
+      <button class="button" style="width:100%" onclick="closeCart()">Continue checkout</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
