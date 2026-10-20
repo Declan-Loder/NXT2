@@ -71,12 +71,11 @@
           <p>We’ll review and add it (or you can post directly in Discord).</p>
         </div>
         <div class="feature">
-          <form class="panel" name="nxt-collab" method="POST" data-netlify="true" netlify-honeypot="bot-field" style="padding:26px">
-            <input type="hidden" name="form-name" value="nxt-collab">
-            <p style="display:none"><label>Don’t fill: <input name="bot-field"></label></p>
+          <form class="panel" id="inquiry-form-collab" data-form-type="collab" style="padding:26px">
+            <p style="display:none" aria-hidden="true"><label>Don’t fill: <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
             <div class="form-group">
               <label>Your name / Discord</label>
-              <input type="text" name="name" required placeholder="Your name">
+              <input type="text" name="name" required placeholder="Your name" maxlength="120">
             </div>
             <div class="form-group">
               <label>Type</label>
@@ -88,13 +87,14 @@
             </div>
             <div class="form-group">
               <label>Title</label>
-              <input type="text" name="title" required placeholder="Short title of what you need / offer">
+              <input type="text" name="title" required placeholder="Short title of what you need / offer" maxlength="180">
             </div>
             <div class="form-group">
               <label>Details</label>
-              <textarea name="details" rows="4" required placeholder="What you’re looking for or offering..."></textarea>
+              <textarea name="details" rows="4" required placeholder="What you’re looking for or offering..." maxlength="5000"></textarea>
             </div>
             <button type="submit" class="button" style="width:100%;padding:14px">Submit collab post ↗</button>
+            <p class="form-status" data-form-status role="status" aria-live="polite"></p>
           </form>
           <div class="featurebox blue">
             <div class="tag">Faster way</div>
