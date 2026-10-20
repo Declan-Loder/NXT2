@@ -251,7 +251,7 @@ const NXT_CREATORS = {
   'man0-xs': {
     name: 'Man0_xs',
     role: 'Founder · Gamer · Creator',
-    image: 'founder2.webp.jpeg',
+    image: 'founder2.webp',
     bio: 'A dedicated gamer and founder inspired by Fortnite, football games and Mortal Kombat. Focused on building communities where competition meets creativity.',
     games: ['Fortnite', 'EA SPORTS FC', 'Mortal Kombat'],
     twitch: 'https://twitch.tv/man0_xs',
@@ -564,6 +564,68 @@ async function handleRegistration(e) {
   }
 }
 
+
+// =====================================================
+// INQUIRY FORMS → Vercel /api/inquiries (Resend)
+// =====================================================
+function initInquiryForms() {
+  document.querySelectorAll('form[data-form-type]').forEach((form) => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formType = form.getAttribute('data-form-type');
+      const btn = form.querySelector('[type="submit"]');
+      const status = form.querySelector('[data-form-status]');
+      const values = Object.fromEntries(new FormData(form).entries());
+
+      if (btn) btn.disabled = true;
+      if (status) status.textContent = 'Sending…';
+
+      try {
+        const res = await fetch('/api/inquiries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ formType, data: values }),
+        });
+
+        let payload = {};
+        try {
+          payload = await res.json();
+        } catch {
+          payload = {};
+        }
+
+        if (!res.ok) {
+          throw new Error(
+            payload.error ||
+              'Could not send your message. Please try Discord or email us directly.'
+          );
+        }
+
+        form.reset();
+        if (status) {
+          status.textContent =
+            formType === 'collab'
+              ? 'Thanks — your collab request was sent. We will review it shortly.'
+              : 'Thanks — your sponsorship enquiry was sent. We will get back to you.';
+        }
+        notice(
+          formType === 'collab'
+            ? 'Collab request sent successfully.'
+            : 'Sponsorship enquiry sent successfully.'
+        );
+      } catch (err) {
+        const msg =
+          err.message ||
+          'Something went wrong. Please try again or reach us on Discord.';
+        if (status) status.textContent = msg;
+        notice(msg);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   updateCartUI();
   checkPaymentReturn();
@@ -574,6 +636,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initCreatorDashboard();
   renderTournaments();
   loadTournaments();
+  initInquiryForms();
 
   const f = document.getElementById('registration-form');
   if (f) f.addEventListener('submit', handleRegistration);

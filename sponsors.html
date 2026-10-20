@@ -126,26 +126,26 @@
           <p>Tell us what you’re looking for. We’ll reply with ideas that fit.</p>
         </div>
         <div class="feature">
-          <form class="panel" name="nxt-sponsor" method="POST" data-netlify="true" netlify-honeypot="bot-field" style="padding:26px">
-            <input type="hidden" name="form-name" value="nxt-sponsor">
-            <p style="display:none"><label>Don’t fill: <input name="bot-field"></label></p>
+          <form class="panel" id="inquiry-form-sponsor" data-form-type="sponsor" style="padding:26px">
+            <p style="display:none" aria-hidden="true"><label>Don’t fill: <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
             <div class="form-row">
               <div class="form-group">
                 <label>Name</label>
-                <input type="text" name="name" required placeholder="Your name">
+                <input type="text" name="name" required placeholder="Your name" maxlength="120">
               </div>
               <div class="form-group">
                 <label>Brand / Company</label>
-                <input type="text" name="brand" required placeholder="Company name">
+                <input type="text" name="brand" required placeholder="Company name" maxlength="180">
               </div>
             </div>
             <div class="form-group">
               <label>Email</label>
-              <input type="email" name="email" required placeholder="you@brand.com">
+              <input type="email" name="email" required placeholder="you@brand.com" maxlength="254">
             </div>
             <div class="form-group">
               <label>What are you interested in?</label>
-              <select name="interest">
+              <select name="interest" required>
+                <option value="">Select...</option>
                 <option>Tournament partnership</option>
                 <option>Community / Discord presence</option>
                 <option>Creator integrations</option>
@@ -154,9 +154,10 @@
             </div>
             <div class="form-group">
               <label>Message</label>
-              <textarea name="message" rows="4" required placeholder="Tell us a bit about your goals..."></textarea>
+              <textarea name="message" rows="4" required placeholder="Tell us a bit about your goals..." maxlength="5000"></textarea>
             </div>
             <button type="submit" class="button" style="width:100%;padding:14px">Send enquiry ↗</button>
+            <p class="form-status" data-form-status role="status" aria-live="polite"></p>
           </form>
           <div class="featurebox blue">
             <div class="tag">Prefer direct?</div>
