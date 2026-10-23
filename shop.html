@@ -1,830 +1,942 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NXT — Shop</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap');
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NXT — Shop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0c0c0c;
+      color: #fff;
+      line-height: 1.5;
+    }
 
-  body {
-    background: #0a0a0a;
-    color: #fff;
-    font-family: 'Inter', sans-serif;
-    overflow: hidden;
-    height: 100vh;
-    user-select: none;
-  }
+    /* ========== HEADER ========== */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(12, 12, 12, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #222;
+    }
 
-  /* ===== ROOM CONTAINER ===== */
-  .scene {
-    width: 100%;
-    height: 100%;
-    perspective: 1200px;
-    overflow: hidden;
-    position: relative;
-  }
+    .header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-  .room {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    transform-style: preserve-3d;
-    transition: transform 0.1s ease-out;
-  }
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.4rem;
+      letter-spacing: 0.35rem;
+      color: #fff;
+      text-decoration: none;
+    }
 
-  /* Walls */
-  .wall {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background: #111;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #222;
-  }
+    nav {
+      display: flex;
+      gap: 36px;
+    }
 
-  .wall.front  { transform: translateZ(-500px); }
-  .wall.back   { transform: rotateY(180deg) translateZ(-500px); }
-  .wall.left   { transform: rotateY(90deg) translateZ(-500px); }
-  .wall.right  { transform: rotateY(-90deg) translateZ(-500px); }
-  .wall.floor  {
-    width: 1000px;
-    height: 1000px;
-    transform: rotateX(90deg) translateZ(-500px);
-    background: linear-gradient(180deg, #0d0d0d, #1a1a1a);
-    border: none;
-  }
-  .wall.ceiling {
-    width: 1000px;
-    height: 1000px;
-    transform: rotateX(-90deg) translateZ(-500px);
-    background: #0a0a0a;
-    border: none;
-  }
+    nav a {
+      color: #aaa;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      letter-spacing: 0.08rem;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
 
-  /* NXT Logo on back wall */
-  .nxt-logo {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 12rem;
-    letter-spacing: 1.5rem;
-    color: #fff;
-    text-shadow: 0 0 40px rgba(255,255,255,0.3);
-    opacity: 0.9;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
+    nav a:hover,
+    nav a.active {
+      color: #fff;
+    }
 
-  .section-title {
-    position: absolute;
-    top: 40px;
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2.5rem;
-    letter-spacing: 0.4rem;
-    color: #fff;
-    opacity: 0.7;
-  }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
 
-  /* Product cards on walls */
-  .products {
-    display: flex;
-    gap: 40px;
-    flex-wrap: wrap;
-    justify-content: center;
-    padding: 80px 40px 40px;
-    max-width: 900px;
-  }
+    .icon-btn {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.25rem;
+      cursor: pointer;
+      position: relative;
+    }
 
-  .product-card {
-    width: 180px;
-    cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s;
-    text-align: center;
-  }
+    .cart-count {
+      position: absolute;
+      top: -8px;
+      right: -10px;
+      background: #fff;
+      color: #000;
+      font-size: 0.7rem;
+      font-weight: 600;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-  .product-card:hover {
-    transform: translateY(-12px) scale(1.05);
-  }
+    /* ========== HERO ========== */
+    .hero {
+      height: 420px;
+      background: linear-gradient(135deg, #111 0%, #1a1a1a 50%, #0d0d0d 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
 
-  .product-img {
-    width: 180px;
-    height: 220px;
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 3rem;
-    margin-bottom: 12px;
-    position: relative;
-    overflow: hidden;
-  }
+    .hero::before {
+      content: 'NXT';
+      position: absolute;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28rem;
+      color: rgba(255,255,255,0.03);
+      letter-spacing: 2rem;
+      pointer-events: none;
+    }
 
-  .product-img::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.05));
-  }
+    .hero-content h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 5rem;
+      letter-spacing: 0.6rem;
+      margin-bottom: 12px;
+    }
 
-  .product-name {
-    font-size: 0.95rem;
-    font-weight: 500;
-    margin-bottom: 4px;
-  }
+    .hero-content p {
+      color: #999;
+      font-size: 1.1rem;
+      letter-spacing: 0.15rem;
+      text-transform: uppercase;
+    }
 
-  .product-price {
-    font-size: 0.85rem;
-    color: #aaa;
-  }
+    /* ========== FILTERS ========== */
+    .filters {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 32px 20px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
 
-  /* ===== UI OVERLAY ===== */
-  .ui {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 100;
-  }
+    .filter-btn {
+      background: transparent;
+      border: 1px solid #333;
+      color: #aaa;
+      padding: 10px 22px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.05rem;
+    }
 
-  .ui > * {
-    pointer-events: auto;
-  }
+    .filter-btn:hover,
+    .filter-btn.active {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
+    }
 
-  /* Top bar */
-  .top-bar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    padding: 24px 40px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
-  }
+    /* ========== PRODUCT GRID ========== */
+    .shop {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px 32px 80px;
+    }
 
-  .brand {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2rem;
-    letter-spacing: 0.5rem;
-  }
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 32px;
+    }
 
-  .cart-btn {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid #444;
-    color: #fff;
-    padding: 12px 24px;
-    border-radius: 50px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    transition: all 0.2s;
-  }
+    .product-card {
+      cursor: pointer;
+      group: true;
+    }
 
-  .cart-btn:hover {
-    background: rgba(255,255,255,0.2);
-  }
+    .product-image {
+      width: 100%;
+      aspect-ratio: 3/4;
+      background: #1a1a1a;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 5rem;
+      transition: transform 0.4s ease;
+    }
 
-  .cart-count {
-    background: #fff;
-    color: #000;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
+    .product-card:hover .product-image {
+      transform: scale(1.02);
+    }
 
-  /* Instructions */
-  .hint {
-    position: absolute;
-    bottom: 40px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.6);
-    padding: 12px 28px;
-    border-radius: 50px;
-    font-size: 0.85rem;
-    color: #ccc;
-    backdrop-filter: blur(10px);
-    border: 1px solid #333;
-  }
+    .product-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
 
-  /* ===== PRODUCT MODAL ===== */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.85);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 200;
-    backdrop-filter: blur(8px);
-  }
+    .product-badge {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      background: #fff;
+      color: #000;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 4px;
+      letter-spacing: 0.05rem;
+    }
 
-  .modal-overlay.active {
-    display: flex;
-  }
+    .product-info h3 {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
 
-  .modal {
-    background: #161616;
-    border: 1px solid #333;
-    border-radius: 16px;
-    width: 90%;
-    max-width: 700px;
-    padding: 40px;
-    display: flex;
-    gap: 40px;
-    position: relative;
-    animation: modalIn 0.3s ease;
-  }
+    .product-info .price {
+      color: #aaa;
+      font-size: 0.95rem;
+    }
 
-  @keyframes modalIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-  }
+    .product-colors {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+    }
 
-  .modal-close {
-    position: absolute;
-    top: 20px;
-    right: 24px;
-    background: none;
-    border: none;
-    color: #888;
-    font-size: 1.5rem;
-    cursor: pointer;
-  }
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid #444;
+    }
 
-  .modal-close:hover { color: #fff; }
+    /* ========== PRODUCT MODAL ========== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(6px);
+    }
 
-  .modal-img {
-    width: 260px;
-    height: 320px;
-    background: #1f1f1f;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 5rem;
-    flex-shrink: 0;
-  }
+    .modal-overlay.active {
+      display: flex;
+    }
 
-  .modal-info h2 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2.2rem;
-    letter-spacing: 0.15rem;
-    margin-bottom: 8px;
-  }
+    .modal {
+      background: #141414;
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      max-width: 900px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+      animation: fadeIn 0.3s ease;
+    }
 
-  .modal-price {
-    font-size: 1.3rem;
-    color: #ccc;
-    margin-bottom: 24px;
-  }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-  .color-label, .size-label {
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1rem;
-    color: #888;
-    margin-bottom: 10px;
-  }
+    .modal-image {
+      background: #1c1c1c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8rem;
+      min-height: 480px;
+    }
 
-  .colors {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 24px;
-  }
+    .modal-details {
+      padding: 48px 40px;
+      display: flex;
+      flex-direction: column;
+    }
 
-  .color-swatch {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: all 0.2s;
-  }
+    .modal-details h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.4rem;
+      letter-spacing: 0.15rem;
+      margin-bottom: 8px;
+    }
 
-  .color-swatch.active {
-    border-color: #fff;
-    transform: scale(1.15);
-  }
+    .modal-price {
+      font-size: 1.3rem;
+      color: #ccc;
+      margin-bottom: 28px;
+    }
 
-  .sizes {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 32px;
-  }
+    .option-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12rem;
+      color: #888;
+      margin-bottom: 12px;
+    }
 
-  .size-btn {
-    width: 44px;
-    height: 44px;
-    border: 1px solid #444;
-    background: transparent;
-    color: #fff;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.2s;
-  }
+    .color-options {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
 
-  .size-btn:hover, .size-btn.active {
-    background: #fff;
-    color: #000;
-    border-color: #fff;
-  }
+    .color-option {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+    }
 
-  .add-to-cart {
-    width: 100%;
-    padding: 16px;
-    background: #fff;
-    color: #000;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    letter-spacing: 0.05rem;
-  }
+    .color-option.active {
+      border-color: #fff;
+      transform: scale(1.1);
+    }
 
-  .add-to-cart:hover {
-    background: #e0e0e0;
-    transform: translateY(-2px);
-  }
+    .size-options {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 36px;
+      flex-wrap: wrap;
+    }
 
-  /* ===== CART SIDEBAR ===== */
-  .cart-sidebar {
-    position: fixed;
-    top: 0;
-    right: -400px;
-    width: 380px;
-    height: 100%;
-    background: #111;
-    border-left: 1px solid #333;
-    z-index: 300;
-    transition: right 0.35s ease;
-    display: flex;
-    flex-direction: column;
-  }
+    .size-option {
+      min-width: 48px;
+      height: 48px;
+      border: 1px solid #333;
+      background: transparent;
+      color: #fff;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
 
-  .cart-sidebar.open {
-    right: 0;
-  }
+    .size-option:hover,
+    .size-option.active {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
+    }
 
-  .cart-header {
-    padding: 28px 28px 20px;
-    border-bottom: 1px solid #222;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
+    .add-btn {
+      margin-top: auto;
+      width: 100%;
+      padding: 18px;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.05rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
 
-  .cart-header h3 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.6rem;
-    letter-spacing: 0.2rem;
-  }
+    .add-btn:hover {
+      background: #e5e5e5;
+      transform: translateY(-2px);
+    }
 
-  .cart-close {
-    background: none;
-    border: none;
-    color: #888;
-    font-size: 1.4rem;
-    cursor: pointer;
-  }
+    .modal-close {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 1.8rem;
+      cursor: pointer;
+      z-index: 10;
+    }
 
-  .cart-items {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px 28px;
-  }
+    .modal-close:hover {
+      color: #fff;
+    }
 
-  .cart-item {
-    display: flex;
-    gap: 16px;
-    padding: 16px 0;
-    border-bottom: 1px solid #222;
-  }
+    /* ========== CART SIDEBAR ========== */
+    .cart-sidebar {
+      position: fixed;
+      top: 0;
+      right: -420px;
+      width: 400px;
+      height: 100%;
+      background: #111;
+      border-left: 1px solid #2a2a2a;
+      z-index: 300;
+      transition: right 0.35s ease;
+      display: flex;
+      flex-direction: column;
+    }
 
-  .cart-item-img {
-    width: 70px;
-    height: 80px;
-    background: #1a1a1a;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-  }
+    .cart-sidebar.open {
+      right: 0;
+    }
 
-  .cart-item-info {
-    flex: 1;
-  }
+    .cart-header {
+      padding: 28px;
+      border-bottom: 1px solid #222;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-  .cart-item-name {
-    font-size: 0.95rem;
-    margin-bottom: 4px;
-  }
+    .cart-header h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem;
+      letter-spacing: 0.2rem;
+    }
 
-  .cart-item-meta {
-    font-size: 0.8rem;
-    color: #888;
-  }
+    .cart-close {
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
 
-  .cart-item-price {
-    font-size: 0.9rem;
-    margin-top: 6px;
-  }
+    .cart-items {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 28px;
+    }
 
-  .cart-footer {
-    padding: 24px 28px;
-    border-top: 1px solid #222;
-  }
+    .cart-item {
+      display: flex;
+      gap: 16px;
+      padding: 18px 0;
+      border-bottom: 1px solid #222;
+    }
 
-  .cart-total {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    font-size: 1.1rem;
-  }
+    .cart-item-img {
+      width: 80px;
+      height: 90px;
+      background: #1a1a1a;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      flex-shrink: 0;
+    }
 
-  .checkout-btn {
-    width: 100%;
-    padding: 16px;
-    background: #fff;
-    color: #000;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 1rem;
-  }
+    .cart-item-info {
+      flex: 1;
+    }
 
-  .checkout-btn:hover {
-    background: #e0e0e0;
-  }
+    .cart-item-name {
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+    }
 
-  .empty-cart {
-    text-align: center;
-    color: #666;
-    padding: 60px 20px;
-    font-size: 0.95rem;
-  }
+    .cart-item-meta {
+      font-size: 0.8rem;
+      color: #777;
+    }
 
-  /* Audio control */
-  .audio-btn {
-    position: absolute;
-    bottom: 40px;
-    right: 40px;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid #444;
-    color: #fff;
-    font-size: 1.2rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-  }
+    .cart-item-price {
+      margin-top: 8px;
+      font-size: 0.95rem;
+    }
 
-  .audio-btn:hover {
-    background: rgba(255,255,255,0.2);
-  }
+    .cart-footer {
+      padding: 24px 28px;
+      border-top: 1px solid #222;
+    }
 
-  .audio-btn.muted {
-    opacity: 0.5;
-  }
-</style>
+    .cart-total {
+      display: flex;
+      justify-content: space-between;
+      font-size: 1.15rem;
+      margin-bottom: 20px;
+    }
+
+    .checkout-btn {
+      width: 100%;
+      padding: 16px;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .checkout-btn:hover {
+      background: #e5e5e5;
+    }
+
+    .empty-cart {
+      text-align: center;
+      color: #555;
+      padding: 80px 20px;
+    }
+
+    /* ========== MUSIC BUTTON ========== */
+    .music-btn {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid #333;
+      color: #fff;
+      font-size: 1.3rem;
+      cursor: pointer;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .music-btn:hover {
+      background: rgba(255,255,255,0.15);
+    }
+
+    .music-btn.playing {
+      background: #fff;
+      color: #000;
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 768px) {
+      nav { display: none; }
+      .hero-content h1 { font-size: 3.2rem; }
+      .modal {
+        grid-template-columns: 1fr;
+      }
+      .modal-image {
+        min-height: 280px;
+        font-size: 5rem;
+      }
+      .cart-sidebar {
+        width: 100%;
+        right: -100%;
+      }
+    }
+  </style>
 </head>
 <body>
 
-<div class="scene" id="scene">
-  <div class="room" id="room">
-    <!-- FLOOR -->
-    <div class="wall floor"></div>
-    <!-- CEILING -->
-    <div class="wall ceiling"></div>
-
-    <!-- BACK WALL - NXT LOGO -->
-    <div class="wall back">
-      <div class="nxt-logo">NXT</div>
-    </div>
-
-    <!-- FRONT WALL - SHIRTS -->
-    <div class="wall front">
-      <div class="section-title">SHIRTS</div>
-      <div class="products">
-        <div class="product-card" data-id="1" data-name="NXT Essential Tee" data-price="45" data-emoji="👕">
-          <div class="product-img">👕</div>
-          <div class="product-name">Essential Tee</div>
-          <div class="product-price">$45</div>
-        </div>
-        <div class="product-card" data-id="2" data-name="NXT Oversized Shirt" data-price="58" data-emoji="👔">
-          <div class="product-img">👔</div>
-          <div class="product-name">Oversized Shirt</div>
-          <div class="product-price">$58</div>
-        </div>
-        <div class="product-card" data-id="3" data-name="NXT Graphic Tee" data-price="52" data-emoji="🎨">
-          <div class="product-img">🎨</div>
-          <div class="product-name">Graphic Tee</div>
-          <div class="product-price">$52</div>
-        </div>
+  <!-- HEADER -->
+  <header>
+    <div class="header-inner">
+      <a href="#" class="logo">NXT</a>
+      <nav>
+        <a href="#" class="active">Shop</a>
+        <a href="#">New Arrivals</a>
+        <a href="#">Jerseys</a>
+        <a href="#">Footwear</a>
+        <a href="#">About</a>
+      </nav>
+      <div class="header-actions">
+        <button class="icon-btn" id="cartBtn">
+          🛒
+          <span class="cart-count" id="cartCount">0</span>
+        </button>
       </div>
     </div>
+  </header>
 
-    <!-- LEFT WALL - JERSEYS -->
-    <div class="wall left">
-      <div class="section-title">JERSEYS</div>
-      <div class="products">
-        <div class="product-card" data-id="4" data-name="NXT Classic Jersey" data-price="75" data-emoji="🏀">
-          <div class="product-img">🏀</div>
-          <div class="product-name">Classic Jersey</div>
-          <div class="product-price">$75</div>
-        </div>
-        <div class="product-card" data-id="5" data-name="NXT Mesh Jersey" data-price="82" data-emoji="⚽">
-          <div class="product-img">⚽</div>
-          <div class="product-name">Mesh Jersey</div>
-          <div class="product-price">$82</div>
-        </div>
-      </div>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>NXT</h1>
+      <p>Modern Art × Streetwear</p>
     </div>
+  </section>
 
-    <!-- RIGHT WALL - SHOES -->
-    <div class="wall right">
-      <div class="section-title">FOOTWEAR</div>
-      <div class="products">
-        <div class="product-card" data-id="6" data-name="NXT Runner" data-price="120" data-emoji="👟">
-          <div class="product-img">👟</div>
-          <div class="product-name">NXT Runner</div>
-          <div class="product-price">$120</div>
-        </div>
-        <div class="product-card" data-id="7" data-name="NXT High Top" data-price="135" data-emoji="🥾">
-          <div class="product-img">🥾</div>
-          <div class="product-name">High Top</div>
-          <div class="product-price">$135</div>
-        </div>
+  <!-- FILTERS -->
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="shirts">Shirts</button>
+    <button class="filter-btn" data-filter="jerseys">Jerseys</button>
+    <button class="filter-btn" data-filter="footwear">Footwear</button>
+  </div>
+
+  <!-- PRODUCTS -->
+  <main class="shop">
+    <div class="products-grid" id="productsGrid">
+      <!-- Products will be injected by JS -->
+    </div>
+  </main>
+
+  <!-- PRODUCT MODAL -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal" style="position: relative;">
+      <button class="modal-close" id="modalClose">×</button>
+      <div class="modal-image" id="modalImage">👕</div>
+      <div class="modal-details">
+        <h2 id="modalName">Product Name</h2>
+        <div class="modal-price" id="modalPrice">$0</div>
+
+        <div class="option-label">Colour</div>
+        <div class="color-options" id="colorOptions"></div>
+
+        <div class="option-label">Size</div>
+        <div class="size-options" id="sizeOptions"></div>
+
+        <button class="add-btn" id="addToCart">Add to Cart</button>
       </div>
     </div>
   </div>
-</div>
 
-<!-- UI -->
-<div class="ui">
-  <div class="top-bar">
-    <div class="brand">NXT</div>
-    <button class="cart-btn" id="cartBtn">
-      Cart <span class="cart-count" id="cartCount">0</span>
-    </button>
-  </div>
-
-  <div class="hint">Drag to look around • Click a product to view</div>
-
-  <button class="audio-btn" id="audioBtn" title="Toggle music">♪</button>
-</div>
-
-<!-- PRODUCT MODAL -->
-<div class="modal-overlay" id="modal">
-  <div class="modal">
-    <button class="modal-close" id="modalClose">×</button>
-    <div class="modal-img" id="modalImg">👕</div>
-    <div class="modal-info">
-      <h2 id="modalName">Product</h2>
-      <div class="modal-price" id="modalPrice">$0</div>
-
-      <div class="color-label">Colour</div>
-      <div class="colors" id="colorOptions">
-        <div class="color-swatch active" style="background:#111" data-color="Black"></div>
-        <div class="color-swatch" style="background:#fff; border:1px solid #444" data-color="White"></div>
-        <div class="color-swatch" style="background:#c41e3a" data-color="Red"></div>
-        <div class="color-swatch" style="background:#1a3c6e" data-color="Navy"></div>
+  <!-- CART SIDEBAR -->
+  <div class="cart-sidebar" id="cartSidebar">
+    <div class="cart-header">
+      <h3>Your Bag</h3>
+      <button class="cart-close" id="cartClose">×</button>
+    </div>
+    <div class="cart-items" id="cartItems">
+      <div class="empty-cart">Your bag is empty</div>
+    </div>
+    <div class="cart-footer">
+      <div class="cart-total">
+        <span>Total</span>
+        <strong id="cartTotal">$0</strong>
       </div>
-
-      <div class="size-label">Size</div>
-      <div class="sizes" id="sizeOptions">
-        <button class="size-btn">S</button>
-        <button class="size-btn active">M</button>
-        <button class="size-btn">L</button>
-        <button class="size-btn">XL</button>
-      </div>
-
-      <button class="add-to-cart" id="addToCart">Add to Cart</button>
+      <button class="checkout-btn">Checkout</button>
     </div>
   </div>
-</div>
 
-<!-- CART SIDEBAR -->
-<div class="cart-sidebar" id="cartSidebar">
-  <div class="cart-header">
-    <h3>Your Bag</h3>
-    <button class="cart-close" id="cartClose">×</button>
-  </div>
-  <div class="cart-items" id="cartItems">
-    <div class="empty-cart">Your bag is empty</div>
-  </div>
-  <div class="cart-footer">
-    <div class="cart-total">
-      <span>Total</span>
-      <span id="cartTotal">$0</span>
-    </div>
-    <button class="checkout-btn">Checkout</button>
-  </div>
-</div>
+  <!-- MUSIC -->
+  <button class="music-btn" id="musicBtn" title="Play music">♪</button>
 
-<!-- Background music (replace src with your own track) -->
-<audio id="bgMusic" loop>
-  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
-</audio>
+  <audio id="bgMusic" loop>
+    <!-- Replace with your own track -->
+    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" type="audio/mpeg">
+  </audio>
 
-<script>
-  // ========== ROOM ROTATION ==========
-  const room = document.getElementById('room');
-  const scene = document.getElementById('scene');
+  <script>
+    // ========== PRODUCT DATA ==========
+    const products = [
+      {
+        id: 1,
+        name: "NXT Essential Tee",
+        price: 48,
+        category: "shirts",
+        emoji: "👕",
+        badge: "New",
+        colors: [
+          { name: "Black", hex: "#111" },
+          { name: "White", hex: "#f5f5f5" },
+          { name: "Stone", hex: "#c2b8a3" }
+        ],
+        sizes: ["S", "M", "L", "XL"]
+      },
+      {
+        id: 2,
+        name: "NXT Oversized Shirt",
+        price: 62,
+        category: "shirts",
+        emoji: "👔",
+        colors: [
+          { name: "Black", hex: "#111" },
+          { name: "Olive", hex: "#4a5c3a" },
+          { name: "Cream", hex: "#f0e6d3" }
+        ],
+        sizes: ["S", "M", "L", "XL", "XXL"]
+      },
+      {
+        id: 3,
+        name: "NXT Graphic Tee",
+        price: 55,
+        category: "shirts",
+        emoji: "🎨",
+        badge: "Limited",
+        colors: [
+          { name: "Black", hex: "#111" },
+          { name: "White", hex: "#f5f5f5" }
+        ],
+        sizes: ["S", "M", "L", "XL"]
+      },
+      {
+        id: 4,
+        name: "NXT Classic Jersey",
+        price: 78,
+        category: "jerseys",
+        emoji: "🏀",
+        colors: [
+          { name: "Black", hex: "#111" },
+          { name: "Red", hex: "#c41e3a" },
+          { name: "Navy", hex: "#1a3c6e" }
+        ],
+        sizes: ["S", "M", "L", "XL"]
+      },
+      {
+        id: 5,
+        name: "NXT Mesh Jersey",
+        price: 85,
+        category: "jerseys",
+        emoji: "⚽",
+        badge: "New",
+        colors: [
+          { name: "White", hex: "#f5f5f5" },
+          { name: "Black", hex: "#111" },
+          { name: "Green", hex: "#2d5a3d" }
+        ],
+        sizes: ["S", "M", "L", "XL"]
+      },
+      {
+        id: 6,
+        name: "NXT Runner",
+        price: 128,
+        category: "footwear",
+        emoji: "👟",
+        colors: [
+          { name: "Black", hex: "#111" },
+          { name: "White", hex: "#f5f5f5" },
+          { name: "Grey", hex: "#888" }
+        ],
+        sizes: ["7", "8", "9", "10", "11", "12"]
+      },
+      {
+        id: 7,
+        name: "NXT High Top",
+        price: 145,
+        category: "footwear",
+        emoji: "🥾",
+        badge: "New",
+        colors: [
+          { name: "Black", hex: "#111" },
+          { name: "Gum", hex: "#c4a574" }
+        ],
+        sizes: ["7", "8", "9", "10", "11"]
+      },
+      {
+        id: 8,
+        name: "NXT Longsleeve",
+        price: 58,
+        category: "shirts",
+        emoji: "🧥",
+        colors: [
+          { name: "Black", hex: "#111" },
+          { name: "Charcoal", hex: "#3a3a3a" },
+          { name: "Bone", hex: "#e8e0d5" }
+        ],
+        sizes: ["S", "M", "L", "XL"]
+      }
+    ];
 
-  let isDragging = false;
-  let previousX = 0;
-  let previousY = 0;
-  let rotY = 0;
-  let rotX = 0;
+    // ========== STATE ==========
+    let cart = [];
+    let currentProduct = null;
+    let selectedColor = null;
+    let selectedSize = null;
+    let currentFilter = "all";
 
-  scene.addEventListener('mousedown', (e) => {
-    isDragging = true;
-    previousX = e.clientX;
-    previousY = e.clientY;
-  });
+    // ========== RENDER PRODUCTS ==========
+    function renderProducts() {
+      const grid = document.getElementById("productsGrid");
+      const filtered = currentFilter === "all"
+        ? products
+        : products.filter(p => p.category === currentFilter);
 
-  window.addEventListener('mouseup', () => isDragging = false);
-
-  window.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    const deltaX = e.clientX - previousX;
-    const deltaY = e.clientY - previousY;
-    rotY += deltaX * 0.3;
-    rotX -= deltaY * 0.2;
-    rotX = Math.max(-25, Math.min(25, rotX)); // limit vertical look
-    room.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
-    previousX = e.clientX;
-    previousY = e.clientY;
-  });
-
-  // Touch support
-  scene.addEventListener('touchstart', (e) => {
-    isDragging = true;
-    previousX = e.touches[0].clientX;
-    previousY = e.touches[0].clientY;
-  });
-
-  window.addEventListener('touchend', () => isDragging = false);
-
-  window.addEventListener('touchmove', (e) => {
-    if (!isDragging) return;
-    const deltaX = e.touches[0].clientX - previousX;
-    const deltaY = e.touches[0].clientY - previousY;
-    rotY += deltaX * 0.3;
-    rotX -= deltaY * 0.2;
-    rotX = Math.max(-25, Math.min(25, rotX));
-    room.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
-    previousX = e.touches[0].clientX;
-    previousY = e.touches[0].clientY;
-  });
-
-  // ========== PRODUCT MODAL ==========
-  const modal = document.getElementById('modal');
-  const modalClose = document.getElementById('modalClose');
-  let currentProduct = null;
-  let selectedColor = 'Black';
-  let selectedSize = 'M';
-
-  document.querySelectorAll('.product-card').forEach(card => {
-    card.addEventListener('click', (e) => {
-      e.stopPropagation();
-      currentProduct = {
-        id: card.dataset.id,
-        name: card.dataset.name,
-        price: parseInt(card.dataset.price),
-        emoji: card.dataset.emoji
-      };
-      document.getElementById('modalName').textContent = currentProduct.name;
-      document.getElementById('modalPrice').textContent = `$${currentProduct.price}`;
-      document.getElementById('modalImg').textContent = currentProduct.emoji;
-      modal.classList.add('active');
-    });
-  });
-
-  modalClose.addEventListener('click', () => modal.classList.remove('active'));
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) modal.classList.remove('active');
-  });
-
-  // Color selection
-  document.querySelectorAll('.color-swatch').forEach(swatch => {
-    swatch.addEventListener('click', () => {
-      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-      swatch.classList.add('active');
-      selectedColor = swatch.dataset.color;
-    });
-  });
-
-  // Size selection
-  document.querySelectorAll('.size-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selectedSize = btn.textContent;
-    });
-  });
-
-  // ========== CART ==========
-  let cart = [];
-  const cartSidebar = document.getElementById('cartSidebar');
-  const cartCount = document.getElementById('cartCount');
-  const cartItems = document.getElementById('cartItems');
-  const cartTotal = document.getElementById('cartTotal');
-
-  document.getElementById('addToCart').addEventListener('click', () => {
-    if (!currentProduct) return;
-    cart.push({
-      ...currentProduct,
-      color: selectedColor,
-      size: selectedSize
-    });
-    updateCart();
-    modal.classList.remove('active');
-  });
-
-  document.getElementById('cartBtn').addEventListener('click', () => {
-    cartSidebar.classList.add('open');
-  });
-
-  document.getElementById('cartClose').addEventListener('click', () => {
-    cartSidebar.classList.remove('open');
-  });
-
-  function updateCart() {
-    cartCount.textContent = cart.length;
-    if (cart.length === 0) {
-      cartItems.innerHTML = '<div class="empty-cart">Your bag is empty</div>';
-      cartTotal.textContent = '$0';
-      return;
-    }
-
-    let total = 0;
-    cartItems.innerHTML = cart.map((item, i) => {
-      total += item.price;
-      return `
-        <div class="cart-item">
-          <div class="cart-item-img">${item.emoji}</div>
-          <div class="cart-item-info">
-            <div class="cart-item-name">${item.name}</div>
-            <div class="cart-item-meta">${item.color} / ${item.size}</div>
-            <div class="cart-item-price">$${item.price}</div>
+      grid.innerHTML = filtered.map(p => `
+        <div class="product-card" data-id="${p.id}">
+          <div class="product-image">
+            ${p.badge ? `<span class="product-badge">${p.badge}</span>` : ""}
+            ${p.emoji}
+          </div>
+          <div class="product-info">
+            <h3>${p.name}</h3>
+            <div class="price">$${p.price}</div>
+            <div class="product-colors">
+              ${p.colors.map(c => `<div class="swatch" style="background:${c.hex}"></div>`).join("")}
+            </div>
           </div>
         </div>
-      `;
-    }).join('');
-    cartTotal.textContent = `$${total}`;
-  }
+      `).join("");
 
-  // ========== BACKGROUND MUSIC ==========
-  const audio = document.getElementById('bgMusic');
-  const audioBtn = document.getElementById('audioBtn');
-  let isPlaying = false;
-
-  // Auto-play attempt (browsers often block until user interaction)
-  audioBtn.addEventListener('click', () => {
-    if (isPlaying) {
-      audio.pause();
-      audioBtn.classList.add('muted');
-      audioBtn.textContent = '♪';
-    } else {
-      audio.play().catch(() => {});
-      audioBtn.classList.remove('muted');
-      audioBtn.textContent = '♫';
+      // Add click listeners
+      document.querySelectorAll(".product-card").forEach(card => {
+        card.addEventListener("click", () => openModal(parseInt(card.dataset.id)));
+      });
     }
-    isPlaying = !isPlaying;
-  });
 
-  // Start muted by default (good practice)
-  audio.volume = 0.3;
-</script>
+    // ========== FILTERS ==========
+    document.querySelectorAll(".filter-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentFilter = btn.dataset.filter;
+        renderProducts();
+      });
+    });
+
+    // ========== MODAL ==========
+    function openModal(id) {
+      currentProduct = products.find(p => p.id === id);
+      selectedColor = currentProduct.colors[0];
+      selectedSize = currentProduct.sizes[1] || currentProduct.sizes[0];
+
+      document.getElementById("modalName").textContent = currentProduct.name;
+      document.getElementById("modalPrice").textContent = `$${currentProduct.price}`;
+      document.getElementById("modalImage").textContent = currentProduct.emoji;
+
+      // Colors
+      const colorOptions = document.getElementById("colorOptions");
+      colorOptions.innerHTML = currentProduct.colors.map((c, i) => `
+        <div class="color-option ${i === 0 ? "active" : ""}" 
+             style="background:${c.hex}" 
+             data-index="${i}"
+             title="${c.name}"></div>
+      `).join("");
+
+      colorOptions.querySelectorAll(".color-option").forEach(el => {
+        el.addEventListener("click", () => {
+          colorOptions.querySelectorAll(".color-option").forEach(e => e.classList.remove("active"));
+          el.classList.add("active");
+          selectedColor = currentProduct.colors[parseInt(el.dataset.index)];
+        });
+      });
+
+      // Sizes
+      const sizeOptions = document.getElementById("sizeOptions");
+      sizeOptions.innerHTML = currentProduct.sizes.map((s, i) => `
+        <button class="size-option ${s === selectedSize ? "active" : ""}">${s}</button>
+      `).join("");
+
+      sizeOptions.querySelectorAll(".size-option").forEach(btn => {
+        btn.addEventListener("click", () => {
+          sizeOptions.querySelectorAll(".size-option").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          selectedSize = btn.textContent;
+        });
+      });
+
+      document.getElementById("modal").classList.add("active");
+    }
+
+    document.getElementById("modalClose").addEventListener("click", () => {
+      document.getElementById("modal").classList.remove("active");
+    });
+
+    document.getElementById("modal").addEventListener("click", (e) => {
+      if (e.target.id === "modal") {
+        document.getElementById("modal").classList.remove("active");
+      }
+    });
+
+    // ========== CART ==========
+    document.getElementById("addToCart").addEventListener("click", () => {
+      if (!currentProduct) return;
+
+      cart.push({
+        ...currentProduct,
+        color: selectedColor.name,
+        size: selectedSize
+      });
+
+      updateCartUI();
+      document.getElementById("modal").classList.remove("active");
+    });
+
+    function updateCartUI() {
+      const countEl = document.getElementById("cartCount");
+      const itemsEl = document.getElementById("cartItems");
+      const totalEl = document.getElementById("cartTotal");
+
+      countEl.textContent = cart.length;
+
+      if (cart.length === 0) {
+        itemsEl.innerHTML = `<div class="empty-cart">Your bag is empty</div>`;
+        totalEl.textContent = "$0";
+        return;
+      }
+
+      let total = 0;
+      itemsEl.innerHTML = cart.map(item => {
+        total += item.price;
+        return `
+          <div class="cart-item">
+            <div class="cart-item-img">${item.emoji}</div>
+            <div class="cart-item-info">
+              <div class="cart-item-name">${item.name}</div>
+              <div class="cart-item-meta">${item.color} / Size ${item.size}</div>
+              <div class="cart-item-price">$${item.price}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      totalEl.textContent = `$${total}`;
+    }
+
+    document.getElementById("cartBtn").addEventListener("click", () => {
+      document.getElementById("cartSidebar").classList.add("open");
+    });
+
+    document.getElementById("cartClose").addEventListener("click", () => {
+      document.getElementById("cartSidebar").classList.remove("open");
+    });
+
+    // ========== MUSIC ==========
+    const musicBtn = document.getElementById("musicBtn");
+    const audio = document.getElementById("bgMusic");
+    let isPlaying = false;
+
+    audio.volume = 0.25;
+
+    musicBtn.addEventListener("click", () => {
+      if (isPlaying) {
+        audio.pause();
+        musicBtn.classList.remove("playing");
+        musicBtn.textContent = "♪";
+      } else {
+        audio.play().catch(() => {});
+        musicBtn.classList.add("playing");
+        musicBtn.textContent = "♫";
+      }
+      isPlaying = !isPlaying;
+    });
+
+    // ========== INIT ==========
+    renderProducts();
+  </script>
 </body>
 </html>
