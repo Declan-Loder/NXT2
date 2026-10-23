@@ -1,127 +1,830 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Shop — NXT Supply</title>
-  <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NXT — Shop</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap');
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: #0a0a0a;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    user-select: none;
+  }
+
+  /* ===== ROOM CONTAINER ===== */
+  .scene {
+    width: 100%;
+    height: 100%;
+    perspective: 1200px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .room {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    transform-style: preserve-3d;
+    transition: transform 0.1s ease-out;
+  }
+
+  /* Walls */
+  .wall {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: #111;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #222;
+  }
+
+  .wall.front  { transform: translateZ(-500px); }
+  .wall.back   { transform: rotateY(180deg) translateZ(-500px); }
+  .wall.left   { transform: rotateY(90deg) translateZ(-500px); }
+  .wall.right  { transform: rotateY(-90deg) translateZ(-500px); }
+  .wall.floor  {
+    width: 1000px;
+    height: 1000px;
+    transform: rotateX(90deg) translateZ(-500px);
+    background: linear-gradient(180deg, #0d0d0d, #1a1a1a);
+    border: none;
+  }
+  .wall.ceiling {
+    width: 1000px;
+    height: 1000px;
+    transform: rotateX(-90deg) translateZ(-500px);
+    background: #0a0a0a;
+    border: none;
+  }
+
+  /* NXT Logo on back wall */
+  .nxt-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 12rem;
+    letter-spacing: 1.5rem;
+    color: #fff;
+    text-shadow: 0 0 40px rgba(255,255,255,0.3);
+    opacity: 0.9;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .section-title {
+    position: absolute;
+    top: 40px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem;
+    letter-spacing: 0.4rem;
+    color: #fff;
+    opacity: 0.7;
+  }
+
+  /* Product cards on walls */
+  .products {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 80px 40px 40px;
+    max-width: 900px;
+  }
+
+  .product-card {
+    width: 180px;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s;
+    text-align: center;
+  }
+
+  .product-card:hover {
+    transform: translateY(-12px) scale(1.05);
+  }
+
+  .product-img {
+    width: 180px;
+    height: 220px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .product-img::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.05));
+  }
+
+  .product-name {
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .product-price {
+    font-size: 0.85rem;
+    color: #aaa;
+  }
+
+  /* ===== UI OVERLAY ===== */
+  .ui {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  .ui > * {
+    pointer-events: auto;
+  }
+
+  /* Top bar */
+  .top-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 24px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+  }
+
+  .brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 0.5rem;
+  }
+
+  .cart-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid #444;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s;
+  }
+
+  .cart-btn:hover {
+    background: rgba(255,255,255,0.2);
+  }
+
+  .cart-count {
+    background: #fff;
+    color: #000;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  /* Instructions */
+  .hint {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.6);
+    padding: 12px 28px;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    color: #ccc;
+    backdrop-filter: blur(10px);
+    border: 1px solid #333;
+  }
+
+  /* ===== PRODUCT MODAL ===== */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    backdrop-filter: blur(8px);
+  }
+
+  .modal-overlay.active {
+    display: flex;
+  }
+
+  .modal {
+    background: #161616;
+    border: 1px solid #333;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 700px;
+    padding: 40px;
+    display: flex;
+    gap: 40px;
+    position: relative;
+    animation: modalIn 0.3s ease;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+
+  .modal-close:hover { color: #fff; }
+
+  .modal-img {
+    width: 260px;
+    height: 320px;
+    background: #1f1f1f;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 5rem;
+    flex-shrink: 0;
+  }
+
+  .modal-info h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.2rem;
+    letter-spacing: 0.15rem;
+    margin-bottom: 8px;
+  }
+
+  .modal-price {
+    font-size: 1.3rem;
+    color: #ccc;
+    margin-bottom: 24px;
+  }
+
+  .color-label, .size-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1rem;
+    color: #888;
+    margin-bottom: 10px;
+  }
+
+  .colors {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .color-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .color-swatch.active {
+    border-color: #fff;
+    transform: scale(1.15);
+  }
+
+  .sizes {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+
+  .size-btn {
+    width: 44px;
+    height: 44px;
+    border: 1px solid #444;
+    background: transparent;
+    color: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+
+  .size-btn:hover, .size-btn.active {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+  }
+
+  .add-to-cart {
+    width: 100%;
+    padding: 16px;
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05rem;
+  }
+
+  .add-to-cart:hover {
+    background: #e0e0e0;
+    transform: translateY(-2px);
+  }
+
+  /* ===== CART SIDEBAR ===== */
+  .cart-sidebar {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 380px;
+    height: 100%;
+    background: #111;
+    border-left: 1px solid #333;
+    z-index: 300;
+    transition: right 0.35s ease;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cart-sidebar.open {
+    right: 0;
+  }
+
+  .cart-header {
+    padding: 28px 28px 20px;
+    border-bottom: 1px solid #222;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .cart-header h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 0.2rem;
+  }
+
+  .cart-close {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 1.4rem;
+    cursor: pointer;
+  }
+
+  .cart-items {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 28px;
+  }
+
+  .cart-item {
+    display: flex;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid #222;
+  }
+
+  .cart-item-img {
+    width: 70px;
+    height: 80px;
+    background: #1a1a1a;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+  }
+
+  .cart-item-info {
+    flex: 1;
+  }
+
+  .cart-item-name {
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+  }
+
+  .cart-item-meta {
+    font-size: 0.8rem;
+    color: #888;
+  }
+
+  .cart-item-price {
+    font-size: 0.9rem;
+    margin-top: 6px;
+  }
+
+  .cart-footer {
+    padding: 24px 28px;
+    border-top: 1px solid #222;
+  }
+
+  .cart-total {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+  }
+
+  .checkout-btn {
+    width: 100%;
+    padding: 16px;
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+
+  .checkout-btn:hover {
+    background: #e0e0e0;
+  }
+
+  .empty-cart {
+    text-align: center;
+    color: #666;
+    padding: 60px 20px;
+    font-size: 0.95rem;
+  }
+
+  /* Audio control */
+  .audio-btn {
+    position: absolute;
+    bottom: 40px;
+    right: 40px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid #444;
+    color: #fff;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .audio-btn:hover {
+    background: rgba(255,255,255,0.2);
+  }
+
+  .audio-btn.muted {
+    opacity: 0.5;
+  }
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <header class="nav">
-      <a class="brand" href="index.html">NXT<span>.</span></a>
-      <nav class="links">
-        <a href="index.html">Home</a>
-        <a href="tournaments.html">Tournaments</a>
-        <a href="creators.html">Creators</a>
-        <a href="creator-login.html">Creator portal</a>
-        <a href="collab.html">Collab</a>
-        <a href="shop.html" class="active">Shop</a>
-        <a href="sponsors.html">Sponsors</a>
-      </nav>
-      <div class="navright">
-        <button class="button outline cart-btn" onclick="openCart()">
-          Cart <span class="cart-count" style="display:none">0</span>
-        </button>
-        <a class="button" href="https://discord.gg/Bxsw3Aam2" target="_blank" rel="noreferrer">Join Discord ↗</a>
-        <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
-          <span></span><span></span><span></span>
-        </button>
-      </div>
-    </header>
 
-    <div class="mobile-menu" id="mobile-menu">
-      <a href="index.html" onclick="closeMenu()">Home</a>
-      <a href="tournaments.html" onclick="closeMenu()">Tournaments</a>
-      <a href="creators.html" onclick="closeMenu()">Creators</a>
-      <a href="collab.html" onclick="closeMenu()">Collab</a>
-      <a href="shop.html" onclick="closeMenu()">Shop</a>
-      <a href="sponsors.html" onclick="closeMenu()">Sponsors</a>
-      <div class="mobile-cta">
-        <a class="button" href="https://discord.gg/Bxsw3Aam2" target="_blank" rel="noreferrer">Join Discord ↗</a>
-        <button class="button outline" onclick="closeMenu(); openCart()">Open Cart</button>
-      </div>
+<div class="scene" id="scene">
+  <div class="room" id="room">
+    <!-- FLOOR -->
+    <div class="wall floor"></div>
+    <!-- CEILING -->
+    <div class="wall ceiling"></div>
+
+    <!-- BACK WALL - NXT LOGO -->
+    <div class="wall back">
+      <div class="nxt-logo">NXT</div>
     </div>
 
-    <main>
-      <div class="page-hero">
-        <div class="kicker">NXT Supply</div>
-        <h1>Wear what's next.</h1>
-        <p class="muted" style="max-width:420px">Premium basics. Clean design. Official NXT merch — you order, we fulfil.</p>
-      </div>
-
-      <section class="section" style="border-top:none;padding-top:8px">
-        <div class="storeitems">
-          <article class="product">
-            <div class="productart">NXT</div>
-            <h4>Heavyweight Hoodie</h4>
-            <p>Premium streetwear · Black</p>
-            <div class="price">R 699.00</div>
-            <button class="button add-btn" onclick="addToCart('hoodie','Heavyweight Hoodie',699)">Add to cart</button>
-          </article>
-          <article class="product">
-            <div class="productart">NXT</div>
-            <h4>Everyday Track Pant</h4>
-            <p>Comfort-first fit · Black</p>
-            <div class="price">R 549.00</div>
-            <button class="button add-btn" onclick="addToCart('pants','Everyday Track Pant',549)">Add to cart</button>
-          </article>
-          <article class="product">
-            <div class="productart">NXT</div>
-            <h4>Signature Cap</h4>
-            <p>Structured fit · Black / Lime</p>
-            <div class="price">R 299.00</div>
-            <button class="button add-btn" onclick="addToCart('cap','Signature Cap',299)">Add to cart</button>
-          </article>
-          <article class="product">
-            <div class="productart">NXT</div>
-            <h4>Classic Tee</h4>
-            <p>Heavy cotton · Oversized</p>
-            <div class="price">R 349.00</div>
-            <button class="button add-btn" onclick="addToCart('tee','Classic Tee',349)">Add to cart</button>
-          </article>
-          <article class="product">
-            <div class="productart">NXT</div>
-            <h4>Crewneck Sweat</h4>
-            <p>Soft fleece · Embroidered</p>
-            <div class="price">R 599.00</div>
-            <button class="button add-btn" onclick="addToCart('crew','Crewneck Sweat',599)">Add to cart</button>
-          </article>
-          <article class="product">
-            <div class="productart">NXT</div>
-            <h4>Beanie</h4>
-            <p>Knit · Lime detail</p>
-            <div class="price">R 199.00</div>
-            <button class="button add-btn" onclick="addToCart('beanie','Beanie',199)">Add to cart</button>
-          </article>
+    <!-- FRONT WALL - SHIRTS -->
+    <div class="wall front">
+      <div class="section-title">SHIRTS</div>
+      <div class="products">
+        <div class="product-card" data-id="1" data-name="NXT Essential Tee" data-price="45" data-emoji="👕">
+          <div class="product-img">👕</div>
+          <div class="product-name">Essential Tee</div>
+          <div class="product-price">$45</div>
         </div>
-      </section>
-    </main>
-
-    <footer class="footer">
-      <a class="brand" href="index.html">NXT<span>.</span></a>
-      <span>Creators. Competition. Community.</span>
-      <span>© 2026 NXT · South Africa</span>
-    </footer>
-  </div>
-
-  <div class="cart-overlay" id="cart-overlay" onclick="closeCart()"></div>
-  <div class="cart-drawer" id="cart-drawer">
-    <div class="cart-header">
-      <strong>Your Cart</strong>
-      <button class="outline" onclick="closeCart()" style="padding:6px 12px">Close</button>
-    </div>
-    <div class="cart-body" id="cart-body"></div>
-    <div class="cart-footer">
-      <div class="cart-total">
-        <span>Total</span>
-        <span id="cart-total-value">R 0.00</span>
+        <div class="product-card" data-id="2" data-name="NXT Oversized Shirt" data-price="58" data-emoji="👔">
+          <div class="product-img">👔</div>
+          <div class="product-name">Oversized Shirt</div>
+          <div class="product-price">$58</div>
+        </div>
+        <div class="product-card" data-id="3" data-name="NXT Graphic Tee" data-price="52" data-emoji="🎨">
+          <div class="product-img">🎨</div>
+          <div class="product-name">Graphic Tee</div>
+          <div class="product-price">$52</div>
+        </div>
       </div>
-      <a class="button" href="checkout.html" style="width:100%;display:block;text-align:center" onclick="closeCart()">Go to Checkout ↗</a>
+    </div>
+
+    <!-- LEFT WALL - JERSEYS -->
+    <div class="wall left">
+      <div class="section-title">JERSEYS</div>
+      <div class="products">
+        <div class="product-card" data-id="4" data-name="NXT Classic Jersey" data-price="75" data-emoji="🏀">
+          <div class="product-img">🏀</div>
+          <div class="product-name">Classic Jersey</div>
+          <div class="product-price">$75</div>
+        </div>
+        <div class="product-card" data-id="5" data-name="NXT Mesh Jersey" data-price="82" data-emoji="⚽">
+          <div class="product-img">⚽</div>
+          <div class="product-name">Mesh Jersey</div>
+          <div class="product-price">$82</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT WALL - SHOES -->
+    <div class="wall right">
+      <div class="section-title">FOOTWEAR</div>
+      <div class="products">
+        <div class="product-card" data-id="6" data-name="NXT Runner" data-price="120" data-emoji="👟">
+          <div class="product-img">👟</div>
+          <div class="product-name">NXT Runner</div>
+          <div class="product-price">$120</div>
+        </div>
+        <div class="product-card" data-id="7" data-name="NXT High Top" data-price="135" data-emoji="🥾">
+          <div class="product-img">🥾</div>
+          <div class="product-name">High Top</div>
+          <div class="product-price">$135</div>
+        </div>
+      </div>
     </div>
   </div>
+</div>
 
-  <div class="toast" id="toast" role="status"></div>
-  <script src="app.js"></script>
+<!-- UI -->
+<div class="ui">
+  <div class="top-bar">
+    <div class="brand">NXT</div>
+    <button class="cart-btn" id="cartBtn">
+      Cart <span class="cart-count" id="cartCount">0</span>
+    </button>
+  </div>
+
+  <div class="hint">Drag to look around • Click a product to view</div>
+
+  <button class="audio-btn" id="audioBtn" title="Toggle music">♪</button>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <button class="modal-close" id="modalClose">×</button>
+    <div class="modal-img" id="modalImg">👕</div>
+    <div class="modal-info">
+      <h2 id="modalName">Product</h2>
+      <div class="modal-price" id="modalPrice">$0</div>
+
+      <div class="color-label">Colour</div>
+      <div class="colors" id="colorOptions">
+        <div class="color-swatch active" style="background:#111" data-color="Black"></div>
+        <div class="color-swatch" style="background:#fff; border:1px solid #444" data-color="White"></div>
+        <div class="color-swatch" style="background:#c41e3a" data-color="Red"></div>
+        <div class="color-swatch" style="background:#1a3c6e" data-color="Navy"></div>
+      </div>
+
+      <div class="size-label">Size</div>
+      <div class="sizes" id="sizeOptions">
+        <button class="size-btn">S</button>
+        <button class="size-btn active">M</button>
+        <button class="size-btn">L</button>
+        <button class="size-btn">XL</button>
+      </div>
+
+      <button class="add-to-cart" id="addToCart">Add to Cart</button>
+    </div>
+  </div>
+</div>
+
+<!-- CART SIDEBAR -->
+<div class="cart-sidebar" id="cartSidebar">
+  <div class="cart-header">
+    <h3>Your Bag</h3>
+    <button class="cart-close" id="cartClose">×</button>
+  </div>
+  <div class="cart-items" id="cartItems">
+    <div class="empty-cart">Your bag is empty</div>
+  </div>
+  <div class="cart-footer">
+    <div class="cart-total">
+      <span>Total</span>
+      <span id="cartTotal">$0</span>
+    </div>
+    <button class="checkout-btn">Checkout</button>
+  </div>
+</div>
+
+<!-- Background music (replace src with your own track) -->
+<audio id="bgMusic" loop>
+  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+  // ========== ROOM ROTATION ==========
+  const room = document.getElementById('room');
+  const scene = document.getElementById('scene');
+
+  let isDragging = false;
+  let previousX = 0;
+  let previousY = 0;
+  let rotY = 0;
+  let rotX = 0;
+
+  scene.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    previousX = e.clientX;
+    previousY = e.clientY;
+  });
+
+  window.addEventListener('mouseup', () => isDragging = false);
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const deltaX = e.clientX - previousX;
+    const deltaY = e.clientY - previousY;
+    rotY += deltaX * 0.3;
+    rotX -= deltaY * 0.2;
+    rotX = Math.max(-25, Math.min(25, rotX)); // limit vertical look
+    room.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+    previousX = e.clientX;
+    previousY = e.clientY;
+  });
+
+  // Touch support
+  scene.addEventListener('touchstart', (e) => {
+    isDragging = true;
+    previousX = e.touches[0].clientX;
+    previousY = e.touches[0].clientY;
+  });
+
+  window.addEventListener('touchend', () => isDragging = false);
+
+  window.addEventListener('touchmove', (e) => {
+    if (!isDragging) return;
+    const deltaX = e.touches[0].clientX - previousX;
+    const deltaY = e.touches[0].clientY - previousY;
+    rotY += deltaX * 0.3;
+    rotX -= deltaY * 0.2;
+    rotX = Math.max(-25, Math.min(25, rotX));
+    room.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+    previousX = e.touches[0].clientX;
+    previousY = e.touches[0].clientY;
+  });
+
+  // ========== PRODUCT MODAL ==========
+  const modal = document.getElementById('modal');
+  const modalClose = document.getElementById('modalClose');
+  let currentProduct = null;
+  let selectedColor = 'Black';
+  let selectedSize = 'M';
+
+  document.querySelectorAll('.product-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      e.stopPropagation();
+      currentProduct = {
+        id: card.dataset.id,
+        name: card.dataset.name,
+        price: parseInt(card.dataset.price),
+        emoji: card.dataset.emoji
+      };
+      document.getElementById('modalName').textContent = currentProduct.name;
+      document.getElementById('modalPrice').textContent = `$${currentProduct.price}`;
+      document.getElementById('modalImg').textContent = currentProduct.emoji;
+      modal.classList.add('active');
+    });
+  });
+
+  modalClose.addEventListener('click', () => modal.classList.remove('active'));
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.classList.remove('active');
+  });
+
+  // Color selection
+  document.querySelectorAll('.color-swatch').forEach(swatch => {
+    swatch.addEventListener('click', () => {
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+      swatch.classList.add('active');
+      selectedColor = swatch.dataset.color;
+    });
+  });
+
+  // Size selection
+  document.querySelectorAll('.size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedSize = btn.textContent;
+    });
+  });
+
+  // ========== CART ==========
+  let cart = [];
+  const cartSidebar = document.getElementById('cartSidebar');
+  const cartCount = document.getElementById('cartCount');
+  const cartItems = document.getElementById('cartItems');
+  const cartTotal = document.getElementById('cartTotal');
+
+  document.getElementById('addToCart').addEventListener('click', () => {
+    if (!currentProduct) return;
+    cart.push({
+      ...currentProduct,
+      color: selectedColor,
+      size: selectedSize
+    });
+    updateCart();
+    modal.classList.remove('active');
+  });
+
+  document.getElementById('cartBtn').addEventListener('click', () => {
+    cartSidebar.classList.add('open');
+  });
+
+  document.getElementById('cartClose').addEventListener('click', () => {
+    cartSidebar.classList.remove('open');
+  });
+
+  function updateCart() {
+    cartCount.textContent = cart.length;
+    if (cart.length === 0) {
+      cartItems.innerHTML = '<div class="empty-cart">Your bag is empty</div>';
+      cartTotal.textContent = '$0';
+      return;
+    }
+
+    let total = 0;
+    cartItems.innerHTML = cart.map((item, i) => {
+      total += item.price;
+      return `
+        <div class="cart-item">
+          <div class="cart-item-img">${item.emoji}</div>
+          <div class="cart-item-info">
+            <div class="cart-item-name">${item.name}</div>
+            <div class="cart-item-meta">${item.color} / ${item.size}</div>
+            <div class="cart-item-price">$${item.price}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    cartTotal.textContent = `$${total}`;
+  }
+
+  // ========== BACKGROUND MUSIC ==========
+  const audio = document.getElementById('bgMusic');
+  const audioBtn = document.getElementById('audioBtn');
+  let isPlaying = false;
+
+  // Auto-play attempt (browsers often block until user interaction)
+  audioBtn.addEventListener('click', () => {
+    if (isPlaying) {
+      audio.pause();
+      audioBtn.classList.add('muted');
+      audioBtn.textContent = '♪';
+    } else {
+      audio.play().catch(() => {});
+      audioBtn.classList.remove('muted');
+      audioBtn.textContent = '♫';
+    }
+    isPlaying = !isPlaying;
+  });
+
+  // Start muted by default (good practice)
+  audio.volume = 0.3;
+</script>
 </body>
 </html>
