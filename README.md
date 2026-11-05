@@ -9,7 +9,7 @@ A static, multi-page community website for NXT: a South African creator network 
 - `collab.html` — collaboration page (form → `/api/inquiries`)
 - `sponsors.html` — brand/sponsorship page (form → `/api/inquiries`)
 - `tournaments.html` — standings (`data.js`) and Supabase tournament listings/registration
-- `shop.html` / `checkout.html` — cart and checkout UI (PayFast not live yet)
+- `shop.html` / `checkout.html` — NXT Supply **Coming Soon** (merch video + product preview; cart locked until drop). PayFast not live yet
 
 ## Deployment
 Upload the contents of this folder to the GitHub repository connected to Vercel. Keep the root `index.html` at repository root. Vercel serves static files and the `/api/*` serverless functions.
@@ -37,7 +37,7 @@ After setting `RESEND_API_KEY`, redeploy. Until a custom domain is verified in R
    - Confirm URL + anon key in `app.js` match your project  
    - Auth → enable Email provider  
    - Auth → URL config: production Site URL + redirect URLs  
-   - Dashboard only confirms session; editable profiles need a `creator_profiles` table + RLS (not built yet)
+   - Dashboard is a full session UI (account overview, quick links, sign-out). Editable public profiles still need a `creator_profiles` table + RLS (not built yet)
 
 3. **Supabase tournaments**  
    Tables expected by `app.js`:

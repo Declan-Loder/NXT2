@@ -361,13 +361,17 @@ async function initCreatorAuth() {
 
       if (result.error) throw result.error;
 
-      status.textContent =
-        action === 'signup'
-          ? 'Account created. Check your email if verification is enabled, then sign in.'
-          : 'Signed in successfully.';
-
-      if (action === 'login' && result.data.session) {
-        setTimeout(() => (location.href = 'creator-dashboard.html'), 500);
+      if (result.data.session) {
+        status.textContent =
+          action === 'signup'
+            ? 'Account created. Taking you to your dashboard…'
+            : 'Signed in successfully.';
+        setTimeout(() => (location.href = 'creator-dashboard.html'), 450);
+      } else {
+        status.textContent =
+          action === 'signup'
+            ? 'Account created. Check your email if verification is enabled, then sign in.'
+            : 'Signed in successfully.';
       }
     } catch (err) {
       status.textContent = err.message || 'Unable to authenticate. Please try again.';
@@ -397,9 +401,15 @@ async function initCreatorDashboard() {
 
   if (!supabaseClient) {
     root.innerHTML = `
-      <div class="dashboard-welcome">
-        <h1>Creator portal setup required</h1>
-        <p>Connect the correct Supabase project URL and public anon key in app.js to enable accounts.</p>
+      <div class="dashboard-shell">
+        <div class="dashboard-header">
+          <div>
+            <div class="eyebrow">NXT CREATOR PORTAL</div>
+            <h1>Setup required</h1>
+            <p class="muted">Connect the correct Supabase project URL and public anon key in app.js to enable accounts.</p>
+          </div>
+          <a class="button outline" href="creator-login.html">Back to login</a>
+        </div>
       </div>`;
     return;
   }
@@ -414,21 +424,92 @@ async function initCreatorDashboard() {
       return;
     }
 
+    const user = session.user;
+    const email = user.email || '—';
+    const created = user.created_at
+      ? new Date(user.created_at).toLocaleDateString('en-ZA', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        })
+      : '—';
+    const lastSignIn = user.last_sign_in_at
+      ? new Date(user.last_sign_in_at).toLocaleString('en-ZA', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        })
+      : 'Just now';
+    const confirmed = user.email_confirmed_at ? 'Verified' : 'Pending verification';
+    const userId = user.id ? `${user.id.slice(0, 8)}…` : '—';
+
     root.innerHTML = `
-      <div class="dashboard-welcome">
-        <div class="eyebrow">NXT CREATOR PORTAL</div>
-        <h1>Your next chapter starts here.</h1>
-        <p>Signed in as <strong>${escapeHtml(session.user.email)}</strong>.</p>
-        <p>Authentication is connected. Profile editing, analytics and collab management require the creator profile tables and row-level security policies to be configured in Supabase.</p>
-        <button class="button" id="creator-signout">Sign out</button>
+      <div class="dashboard-shell">
+        <div class="dashboard-header">
+          <div>
+            <div class="eyebrow">NXT CREATOR PORTAL</div>
+            <h1>Welcome back.</h1>
+            <p class="muted">Signed in as <strong>${escapeHtml(email)}</strong></p>
+          </div>
+          <div class="dashboard-actions">
+            <a class="button outline" href="creators.html">Creator roster</a>
+            <a class="button outline" href="collab.html">Open collab board</a>
+            <button class="button" type="button" id="creator-signout">Sign out</button>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <section class="dashboard-card">
+            <h3>Account overview</h3>
+            <p class="muted">Your private creator session. Public profile publishing unlocks once creator tables are live in Supabase.</p>
+            <ul class="profile-list">
+              <li><span>Email</span><strong>${escapeHtml(email)}</strong></li>
+              <li><span>Status</span><strong>${escapeHtml(confirmed)}</strong></li>
+              <li><span>Member since</span><strong>${escapeHtml(created)}</strong></li>
+              <li><span>Last sign-in</span><strong>${escapeHtml(lastSignIn)}</strong></li>
+              <li><span>Account ID</span><strong>${escapeHtml(userId)}</strong></li>
+            </ul>
+            <div class="dashboard-note">
+              Profile editing, display name, social links and analytics need a <code>creator_profiles</code> table with RLS. Auth + session are already working.
+            </div>
+          </section>
+
+          <section class="dashboard-card">
+            <h3>Quick moves</h3>
+            <p class="muted">Jump into the community while your profile tools come online.</p>
+            <div class="dashboard-actions" style="flex-direction:column;align-items:stretch">
+              <a class="button" href="https://discord.gg/Bxsw3Aam2" target="_blank" rel="noreferrer">Join Discord ↗</a>
+              <a class="button outline" href="tournaments.html">Browse tournaments</a>
+              <a class="button outline" href="shop.html">NXT Supply (coming soon)</a>
+              <a class="button outline" href="sponsors.html">Brand partnerships</a>
+            </div>
+            <div class="dashboard-stats" style="margin-top:20px">
+              <div class="dash-stat"><b>—</b><span>Collabs</span></div>
+              <div class="dash-stat"><b>—</b><span>Events</span></div>
+              <div class="dash-stat"><b>Live</b><span>Session</span></div>
+            </div>
+          </section>
+        </div>
       </div>`;
 
     document.getElementById('creator-signout')?.addEventListener('click', async () => {
-      await supabaseClient.auth.signOut();
-      location.href = 'creator-login.html';
+      try {
+        await supabaseClient.auth.signOut();
+      } finally {
+        location.href = 'creator-login.html';
+      }
     });
   } catch (e) {
-    root.textContent = 'Could not load your creator session. Please refresh.';
+    root.innerHTML = `
+      <div class="dashboard-shell">
+        <div class="dashboard-header">
+          <div>
+            <div class="eyebrow">NXT CREATOR PORTAL</div>
+            <h1>Could not load session</h1>
+            <p class="muted">Please refresh. If this keeps happening, check Supabase Auth URL config and anon key.</p>
+          </div>
+          <a class="button" href="creator-login.html">Back to login</a>
+        </div>
+      </div>`;
   }
 }
 

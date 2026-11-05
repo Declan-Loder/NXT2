@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Shop — NXT Supply</title>
+  <meta name="theme-color" content="#080d16">
+  <title>Shop — NXT Supply · Coming Soon</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -14,6 +15,7 @@
         <a href="index.html">Home</a>
         <a href="tournaments.html">Tournaments</a>
         <a href="creators.html">Creators</a>
+        <a href="creator-login.html">Creator portal</a>
         <a href="collab.html">Collab</a>
         <a href="shop.html" class="active">Shop</a>
         <a href="sponsors.html">Sponsors</a>
@@ -33,6 +35,7 @@
       <a href="index.html" onclick="closeMenu()">Home</a>
       <a href="tournaments.html" onclick="closeMenu()">Tournaments</a>
       <a href="creators.html" onclick="closeMenu()">Creators</a>
+      <a href="creator-login.html" onclick="closeMenu()">Creator portal</a>
       <a href="collab.html" onclick="closeMenu()">Collab</a>
       <a href="shop.html" onclick="closeMenu()">Shop</a>
       <a href="sponsors.html" onclick="closeMenu()">Sponsors</a>
@@ -43,56 +46,113 @@
     </div>
 
     <main>
-      <div class="page-hero">
-        <div class="kicker">NXT Supply</div>
-        <h1>Wear what's next.</h1>
-        <p class="muted" style="max-width:420px">Premium basics. Clean design. Official NXT merch — you order, we fulfil.</p>
-      </div>
+      <section class="merch-hero">
+        <div class="merch-hero-media">
+          <video
+            class="merch-video"
+            src="nxt-merch.mp4"
+            autoplay
+            muted
+            loop
+            playsinline
+            aria-label="NXT merch drop teaser"
+          ></video>
+          <div class="merch-hero-overlay"></div>
+        </div>
+        <div class="merch-hero-content">
+          <div class="merch-badge">NXT SUPPLY</div>
+          <h1 class="merch-title">COMING<br><em>SOON.</em></h1>
+          <p class="merch-tagline">BUILT DIFFERENT.</p>
+          <p class="merch-sub">Premium streetwear. Clean design. Official NXT merch drops for creators who move different.</p>
+          <div class="merch-cta-row">
+            <a class="button" href="https://discord.gg/Bxsw3Aam2" target="_blank" rel="noreferrer">Get drop alerts on Discord ↗</a>
+            <a class="button outline" href="#preview">Preview the drop</a>
+          </div>
+          <div class="merch-micro">YOUR STYLE. YOUR IDENTITY. · SOUTH AFRICA</div>
+        </div>
+      </section>
 
-      <section class="section" style="border-top:none;padding-top:8px">
+      <section class="section" id="preview">
+        <div class="sectionhead">
+          <div>
+            <div class="kicker">FIRST DROP · PREVIEW</div>
+            <h2>What drops next.</h2>
+          </div>
+          <p>These pieces are locked in. Checkout stays closed until the drop goes live — no fake stock, no half-ready cart.</p>
+        </div>
+
         <div class="storeitems">
-          <article class="product">
-            <div class="productart">NXT</div>
+          <article class="product coming-soon-card">
+            <div class="productart">
+              <span class="product-mark">NXT</span>
+              <span class="soon-pill">SOON</span>
+            </div>
             <h4>Heavyweight Hoodie</h4>
             <p>Premium streetwear · Black</p>
             <div class="price">R 699.00</div>
-            <button class="button add-btn" onclick="addToCart('hoodie','Heavyweight Hoodie',699)">Add to cart</button>
+            <button class="button outline add-btn" type="button" disabled aria-disabled="true">Coming soon</button>
           </article>
-          <article class="product">
-            <div class="productart">NXT</div>
+          <article class="product coming-soon-card">
+            <div class="productart">
+              <span class="product-mark">NXT</span>
+              <span class="soon-pill">SOON</span>
+            </div>
             <h4>Everyday Track Pant</h4>
-            <p>Comfort-first fit · Black</p>
+            <p>Comfort-first fit · Black / Lime zip</p>
             <div class="price">R 549.00</div>
-            <button class="button add-btn" onclick="addToCart('pants','Everyday Track Pant',549)">Add to cart</button>
+            <button class="button outline add-btn" type="button" disabled aria-disabled="true">Coming soon</button>
           </article>
-          <article class="product">
-            <div class="productart">NXT</div>
-            <h4>Signature Cap</h4>
-            <p>Structured fit · Black / Lime</p>
-            <div class="price">R 299.00</div>
-            <button class="button add-btn" onclick="addToCart('cap','Signature Cap',299)">Add to cart</button>
-          </article>
-          <article class="product">
-            <div class="productart">NXT</div>
+          <article class="product coming-soon-card">
+            <div class="productart">
+              <span class="product-mark">NXT</span>
+              <span class="soon-pill">SOON</span>
+            </div>
             <h4>Classic Tee</h4>
             <p>Heavy cotton · Oversized</p>
             <div class="price">R 349.00</div>
-            <button class="button add-btn" onclick="addToCart('tee','Classic Tee',349)">Add to cart</button>
+            <button class="button outline add-btn" type="button" disabled aria-disabled="true">Coming soon</button>
           </article>
-          <article class="product">
-            <div class="productart">NXT</div>
+          <article class="product coming-soon-card">
+            <div class="productart">
+              <span class="product-mark">NXT</span>
+              <span class="soon-pill">SOON</span>
+            </div>
             <h4>Crewneck Sweat</h4>
             <p>Soft fleece · Embroidered</p>
             <div class="price">R 599.00</div>
-            <button class="button add-btn" onclick="addToCart('crew','Crewneck Sweat',599)">Add to cart</button>
+            <button class="button outline add-btn" type="button" disabled aria-disabled="true">Coming soon</button>
           </article>
-          <article class="product">
-            <div class="productart">NXT</div>
+          <article class="product coming-soon-card">
+            <div class="productart">
+              <span class="product-mark">NXT</span>
+              <span class="soon-pill">SOON</span>
+            </div>
+            <h4>Signature Cap</h4>
+            <p>Structured fit · Black / Lime</p>
+            <div class="price">R 299.00</div>
+            <button class="button outline add-btn" type="button" disabled aria-disabled="true">Coming soon</button>
+          </article>
+          <article class="product coming-soon-card">
+            <div class="productart">
+              <span class="product-mark">NXT</span>
+              <span class="soon-pill">SOON</span>
+            </div>
             <h4>Beanie</h4>
             <p>Knit · Lime detail</p>
             <div class="price">R 199.00</div>
-            <button class="button add-btn" onclick="addToCart('beanie','Beanie',199)">Add to cart</button>
+            <button class="button outline add-btn" type="button" disabled aria-disabled="true">Coming soon</button>
           </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="banner merch-waitlist">
+          <div>
+            <div class="kicker">DROP ALERTS</div>
+            <h2>Don't miss the first drop.</h2>
+            <p class="muted">Join the NXT Discord. When Supply goes live, you'll hear it there first.</p>
+          </div>
+          <a class="button" href="https://discord.gg/Bxsw3Aam2" target="_blank" rel="noreferrer">Join Discord ↗</a>
         </div>
       </section>
     </main>
@@ -117,6 +177,7 @@
         <span id="cart-total-value">R 0.00</span>
       </div>
       <a class="button" href="checkout.html" style="width:100%;display:block;text-align:center" onclick="closeCart()">Go to Checkout ↗</a>
+      <p class="tiny-note" style="margin-top:10px;text-align:center">Shop is in coming-soon mode. Checkout will unlock with the first drop.</p>
     </div>
   </div>
 
