@@ -1,7 +1,7 @@
 /* NXT community website — shared frontend behaviours */
 
 const SUPABASE_URL = 'https://sagmjbyrtdindecmeyil.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhZ21qYnlydGRpbmRlY21leWlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxMzQ5NjAsImV4cCI6MjEwNzcxMDk2MH0.i9b_i95IsAn295kiKs9ovGasNzg-knq_XPFxOu59wdc';
+const SUPABASE_ANON_KEY = 'sb_publishable_gDsserZ9EnBRPNpuawZ08Q_Byy6MEfO';
 
 const supabaseClient =
   typeof window.supabase !== 'undefined' && window.supabase.createClient
