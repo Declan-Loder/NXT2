@@ -177,7 +177,7 @@ a { color: inherit; text-decoration: none; }
 
 /* ========== HERO ========== */
 .hero {
-  padding: 70px 0 50px;
+  padding: 36px 0 40px;
   display: grid;
   grid-template-columns: 1.1fr .9fr;
   gap: 50px;
@@ -496,7 +496,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* Page hero */
-.page-hero { padding: 48px 0 24px; }
+.page-hero { padding: 28px 0 16px; }
 .page-hero h1 {
   font-size: clamp(32px, 4.5vw, 52px);
   letter-spacing: -.06em;
@@ -664,7 +664,7 @@ body { background: radial-gradient(ellipse at 80% -10%,rgba(91,163,255,.13),tran
 .bigmark span { color:var(--blue); }
 .card,.featurebox,.banner,.auth-card,.creator-profile-hero,.dashboard-welcome { background:linear-gradient(145deg,rgba(21,35,56,.94),rgba(13,21,34,.96)); border:1px solid var(--line); border-radius:20px; }
 .card a { color:var(--blue); }
-.page-hero { padding-top:64px; }
+.page-hero { padding-top: 12px; }
 .auth-layout { min-height:calc(100vh - 170px); display:grid; grid-template-columns:1.05fr .8fr; gap:clamp(36px,8vw,110px); align-items:center; padding:70px 0 90px; }
 .auth-story h1 { font-size:clamp(48px,7vw,84px); line-height:.98; letter-spacing:-.065em; margin:22px 0; }
 .auth-story .lead { max-width:540px; }
@@ -1390,4 +1390,14 @@ header.nav,
 .site-footer-grid a:hover { color: var(--text); }
 @media (max-width: 800px) {
   .site-footer-grid { grid-template-columns: 1fr 1fr; }
+}
+
+
+/* Avoid double top spacing when section + page-hero combine */
+.section.page-hero {
+  padding-top: 28px;
+  border-top: 0;
+}
+main > .section:first-child {
+  padding-top: 28px;
 }
