@@ -798,9 +798,12 @@ async function loadTournaments() {
         <div class="event-status">OPEN · ${feeLabel}</div>
         <h3>${escapeHtml(t.name)}</h3>
         <p class="muted">${escapeHtml(t.format || 'Community tournament')} · ${dateLabel}</p>
-        <a class="button" href="#register" onclick="selectTournament(${Number(
-          t.id
-        )},'${safeJs(t.name)}',${fee})">${btnLabel}</a>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+          <a class="button" href="tournament.html?id=${Number(t.id)}">View details ↗</a>
+          <a class="button outline" href="tournaments.html#register" onclick="selectTournament(${Number(
+            t.id
+          )},'${safeJs(t.name)}',${fee})">${btnLabel}</a>
+        </div>
       </article>`;
       })
       .join('');
@@ -2031,6 +2034,265 @@ async function initCreatorDashboardV2() {
 }
 
 
+
+
+// =====================================================
+// TOURNAMENT DETAIL + CREATOR APPLY
+// =====================================================
+
+async function initTournamentDetailPage() {
+  const root = document.getElementById('tournament-detail-root');
+  if (!root) return;
+
+  const id = Number(new URLSearchParams(location.search).get('id'));
+  if (!id) {
+    root.innerHTML = `<div class="panel" style="padding:28px"><p class="muted">Missing tournament id. <a href="tournaments.html" style="color:var(--blue2)">Browse tournaments</a></p></div>`;
+    return;
+  }
+
+  if (!supabaseClient) {
+    root.innerHTML = `<div class="panel" style="padding:28px"><p class="muted">Supabase is not configured.</p></div>`;
+    return;
+  }
+
+  try {
+    const { data: t, error } = await supabaseClient
+      .from('tournaments')
+      .select('*, games(name,slug)')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!t) {
+      root.innerHTML = `<div class="panel" style="padding:28px"><p class="muted">Tournament not found.</p><a class="button" href="tournaments.html">Back</a></div>`;
+      return;
+    }
+
+    const fee = Number(t.entry_fee) || 0;
+    const feeLabel = fee >= 1 ? `R ${fee.toFixed(2)}` : 'Free entry';
+    const gameName = t.games?.name || t.game || 'Multi-game';
+    const starts = t.starts_at
+      ? new Date(t.starts_at).toLocaleString('en-ZA')
+      : 'TBA';
+    const closes = t.registration_closes_at
+      ? new Date(t.registration_closes_at).toLocaleString('en-ZA')
+      : 'Open';
+
+    // Paid / confirmed count (best effort)
+    let spots = '';
+    if (t.max_players) {
+      const { count } = await supabaseClient
+        .from('registrations')
+        .select('id', { count: 'exact', head: true })
+        .eq('tournament_id', id)
+        .eq('payment_status', 'paid');
+      const used = count || 0;
+      spots = `${used} / ${t.max_players} confirmed`;
+    }
+
+    document.title = `${t.name} — NXT`;
+
+    root.innerHTML = `
+      <div class="panel" style="padding:28px">
+        <div class="tag">${escapeHtml(String(t.status || '').toUpperCase())} · ${escapeHtml(feeLabel)}</div>
+        <h1 style="margin:12px 0 8px;font-size:clamp(28px,4vw,40px);letter-spacing:-.03em">${escapeHtml(t.name)}</h1>
+        <p class="muted" style="margin:0 0 18px">
+          ${escapeHtml(gameName)} · ${escapeHtml(t.format || 'Format TBA')}
+          ${t.platform ? ' · ' + escapeHtml(t.platform) : ''}
+          ${t.region ? ' · ' + escapeHtml(t.region) : ''}
+        </p>
+
+        <div class="checkout-meta" style="margin-bottom:20px">
+          <div><span>Starts</span><strong>${escapeHtml(starts)}</strong></div>
+          <div><span>Registration</span><strong>${escapeHtml(closes)}</strong></div>
+          <div><span>Spaces</span><strong>${escapeHtml(spots || (t.max_players ? 'Max ' + t.max_players : 'Open'))}</strong></div>
+        </div>
+
+        ${
+          t.description
+            ? `<h3 style="margin:0 0 8px">About</h3><p style="margin:0 0 18px;line-height:1.6">${escapeHtml(t.description)}</p>`
+            : ''
+        }
+        ${
+          t.prize_description
+            ? `<h3 style="margin:0 0 8px">Prizes</h3><p class="muted" style="margin:0 0 18px">${escapeHtml(t.prize_description)}</p>`
+            : ''
+        }
+        ${
+          t.rules
+            ? `<h3 style="margin:0 0 8px">Rules</h3><p class="muted" style="margin:0 0 18px;white-space:pre-wrap">${escapeHtml(t.rules)}</p>`
+            : ''
+        }
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          ${
+            ['open', 'live'].includes(t.status)
+              ? `<a class="button" href="tournaments.html#register" onclick="sessionStorage.setItem('nxt_select_tournament', JSON.stringify({id:${Number(t.id)},name:${JSON.stringify(t.name)},fee:${fee}}))">Register for this event ↗</a>`
+              : `<span class="muted">Registration is not open.</span>`
+          }
+          <a class="button outline" href="tournaments.html">All tournaments</a>
+          <a class="button outline" href="player-login.html">Player login</a>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    root.innerHTML = `<div class="panel" style="padding:28px"><p class="muted">${escapeHtml(err.message || 'Could not load tournament.')}</p></div>`;
+  }
+}
+
+function applyPendingTournamentSelection() {
+  try {
+    const raw = sessionStorage.getItem('nxt_select_tournament');
+    if (!raw) return;
+    sessionStorage.removeItem('nxt_select_tournament');
+    const t = JSON.parse(raw);
+    if (t?.id) selectTournament(t.id, t.name || 'Tournament', t.fee || 0);
+  } catch {}
+}
+
+async function initCreatorApplyPage() {
+  const form = document.getElementById('creator-apply-form');
+  if (!form) return;
+
+  // Prefill email if signed in
+  try {
+    if (supabaseClient) {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session?.user?.email) {
+        const email = form.querySelector('[name="email"]');
+        if (email) email.value = session.user.email;
+      }
+    }
+  } catch {}
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const status = document.getElementById('creator-apply-status');
+    const btn = form.querySelector('[type="submit"]');
+    const values = Object.fromEntries(new FormData(form).entries());
+    if (btn) btn.disabled = true;
+    if (status) status.textContent = 'Submitting…';
+
+    const headers = { 'Content-Type': 'application/json' };
+    try {
+      if (supabaseClient) {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session?.access_token) {
+          headers.Authorization = `Bearer ${session.access_token}`;
+        }
+      }
+    } catch {}
+
+    try {
+      const res = await fetch('/api/creator-applications', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ action: 'apply', ...values }),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'Submit failed');
+      if (status) status.textContent = payload.message || 'Submitted.';
+      notice(payload.message || 'Application submitted');
+      form.reset();
+    } catch (err) {
+      if (status) status.textContent = err.message || 'Failed';
+      notice(err.message || 'Could not submit application');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+}
+
+
+
+
+function initAdminCreatorApplications() {
+  const loadBtn = document.getElementById('admin-load-creators-btn');
+  const list = document.getElementById('admin-creator-list');
+  const statusEl = document.getElementById('admin-creator-status');
+  if (!loadBtn || !list) return;
+
+  async function load() {
+    const key = document.getElementById('admin-key')?.value?.trim();
+    const filter = document.getElementById('creator-app-filter')?.value ?? 'pending';
+    if (!key) {
+      if (statusEl) statusEl.textContent = 'Enter the admin key above.';
+      return;
+    }
+    if (statusEl) statusEl.textContent = 'Loading…';
+    try {
+      const res = await fetch('/api/creator-applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'list',
+          admin_key: key,
+          status: filter || undefined,
+        }),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'Load failed');
+      const rows = payload.applications || [];
+      if (statusEl) statusEl.textContent = `${rows.length} application(s)`;
+      if (!rows.length) {
+        list.innerHTML = '<p class="muted">No applications for this filter.</p>';
+        return;
+      }
+      list.innerHTML = rows
+        .map((a) => `
+        <article class="panel admin-reg-card">
+          <div class="tag">${escapeHtml(String(a.status || '').toUpperCase())}</div>
+          <h3 style="margin:8px 0 4px;font-size:16px">${escapeHtml(a.display_name || '')}</h3>
+          <p class="muted" style="margin:0;font-size:13px">
+            ${escapeHtml(a.email || '')} · ${escapeHtml(a.category || '')}<br>
+            ${escapeHtml(a.bio || '').slice(0, 180)}
+            ${a.twitch_url ? '<br>Twitch: ' + escapeHtml(a.twitch_url) : ''}
+          </p>
+          ${
+            a.status === 'pending'
+              ? `<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+                  <button type="button" class="button" data-creator-decision="approved" data-id="${escapeHtml(a.id)}">Approve</button>
+                  <button type="button" class="outline" data-creator-decision="rejected" data-id="${escapeHtml(a.id)}">Reject</button>
+                </div>`
+              : ''
+          }
+        </article>`)
+        .join('');
+
+      list.querySelectorAll('[data-creator-decision]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            const res2 = await fetch('/api/creator-applications', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'review',
+                admin_key: key,
+                application_id: btn.getAttribute('data-id'),
+                decision: btn.getAttribute('data-creator-decision'),
+              }),
+            });
+            const p = await res2.json();
+            if (!res2.ok) throw new Error(p.error || 'Review failed');
+            notice(p.message || 'Updated');
+            load();
+          } catch (err) {
+            notice(err.message || 'Failed');
+            btn.disabled = false;
+          }
+        });
+      });
+    } catch (err) {
+      if (statusEl) statusEl.textContent = err.message || 'Failed';
+      list.innerHTML = `<p class="muted">${escapeHtml(err.message || 'Failed')}</p>`;
+    }
+  }
+
+  loadBtn.addEventListener('click', load);
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
   updateCartUI();
   checkPaymentReturn();
@@ -2044,6 +2306,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initInquiryForms();
   initRegistrationCheckout();
   prefillRegistrationFromSession();
+  applyPendingTournamentSelection();
 
   const f = document.getElementById('registration-form');
   if (f) f.addEventListener('submit', handleRegistration);

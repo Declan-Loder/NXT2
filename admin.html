@@ -35,16 +35,27 @@
         <div class="sectionhead">
           <div>
             <div class="kicker">NXT management</div>
-            <h2>Payment & registration admin</h2>
+            <h2>Admin control</h2>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:20px">
+          <div class="form-group" style="max-width:420px">
+            <label>Admin key</label>
+            <input type="password" id="admin-key" placeholder="NXT_ADMIN_KEY from Vercel" autocomplete="off">
+          </div>
+          <p class="muted" style="margin:0;font-size:13px">One key unlocks payments and creator application reviews.</p>
+        </div>
+
+        <div class="sectionhead">
+          <div>
+            <div class="kicker">Payments</div>
+            <h2>Registrations</h2>
           </div>
         </div>
 
         <div class="panel" style="margin-bottom:20px">
           <div class="form-row">
-            <div class="form-group">
-              <label>Admin key</label>
-              <input type="password" id="admin-key" placeholder="NXT_ADMIN_KEY from Vercel" autocomplete="off">
-            </div>
             <div class="form-group">
               <label>Filter status</label>
               <select id="admin-status-filter">
@@ -70,6 +81,30 @@
         <div id="admin-list" class="admin-list">
           <p class="muted">Enter admin key and load registrations.</p>
         </div>
+
+        <div class="sectionhead" style="margin-top:40px">
+          <div>
+            <div class="kicker">Creators</div>
+            <h2>Applications</h2>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:16px">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <select id="creator-app-filter">
+              <option value="pending">Pending</option>
+              <option value="">All</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <button type="button" class="button" id="admin-load-creators-btn">Load applications ↗</button>
+          </div>
+          <p class="form-status" id="admin-creator-status"></p>
+        </div>
+
+        <div id="admin-creator-list" class="admin-list">
+          <p class="muted">Load pending creator applications to review.</p>
+        </div>
       </section>
     </main>
 
@@ -85,6 +120,7 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       initAdminPaymentsPage();
+      initAdminCreatorApplications();
     });
   </script>
 </body>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d16">
+  <title>Tournament — NXT</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="nav">
+      <a class="brand" href="index.html">NXT<span>.</span></a>
+      <nav class="links">
+        <a href="index.html">Home</a>
+        <a href="tournaments.html" class="active">Tournaments</a>
+        <a href="creators.html">Creators</a>
+        <a href="player-dashboard.html">Player</a>
+        <a href="shop.html">Shop</a>
+      </nav>
+      <div class="navright">
+        <a class="button outline" href="tournaments.html">All tournaments</a>
+        <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="mobile-menu" id="mobile-menu">
+      <a href="index.html" onclick="closeMenu()">Home</a>
+      <a href="tournaments.html" onclick="closeMenu()">Tournaments</a>
+      <a href="creators.html" onclick="closeMenu()">Creators</a>
+      <a href="player-dashboard.html" onclick="closeMenu()">Player</a>
+      <a href="shop.html" onclick="closeMenu()">Shop</a>
+    </div>
+
+    <main>
+      <section class="section">
+        <div id="tournament-detail-root">
+          <div class="panel" style="padding:28px">
+            <p class="muted" style="margin:0">Loading tournament…</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <a class="brand" href="index.html">NXT<span>.</span></a>
+      <span>Creators. Competition. Community.</span>
+      <span>© 2026 NXT · South Africa</span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      initTournamentDetailPage();
+    });
+  </script>
+</body>
+</html>
