@@ -168,38 +168,221 @@ function safeJs(s) {
   return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
-// PayFast integration must be completed by a trusted server endpoint.
-// Never put merchant keys or signatures in browser code.
-function handlePayFastCheckout(e) {
+// =====================================================
+// PAYSTACK (server-side initialize + verify)
+// Secret key never leaves Vercel. Shop stays Coming Soon.
+// =====================================================
+const SHOP_PAYMENTS_LIVE = false; // flip to true when merch drop goes live
+
+async function startPaystackPayment({ type, email, amount, metadata, callbackPath }) {
+  const origin = location.origin;
+  const callback_url =
+    origin +
+    (callbackPath || '/tournaments.html') +
+    (String(callbackPath || '').includes('?') ? '&' : '?') +
+    'payment=verify';
+
+  const res = await fetch('/api/paystack-initialize', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type,
+      email,
+      amount,
+      metadata,
+      callback_url,
+    }),
+  });
+
+  let payload = {};
+  try {
+    payload = await res.json();
+  } catch {
+    payload = {};
+  }
+
+  if (!res.ok || !payload.authorization_url) {
+    throw new Error(payload.error || 'Could not start Paystack payment.');
+  }
+
+  // Keep pending tournament details for post-verify client insert fallback
+  if (type === 'tournament' && metadata) {
+    try {
+      sessionStorage.setItem(
+        'nxt_pending_registration',
+        JSON.stringify({ ...metadata, email, amount, reference: payload.reference })
+      );
+    } catch {}
+  }
+
+  location.href = payload.authorization_url;
+}
+
+async function handlePaystackCheckout(e) {
   e.preventDefault();
+  if (!SHOP_PAYMENTS_LIVE) {
+    notice('NXT Supply is still Coming Soon. Checkout unlocks with the first drop.');
+    return false;
+  }
   if (!getCart().length) {
     notice('Your cart is empty. Add some items first.');
     return false;
   }
-  notice(
-    'Your cart is saved. Secure PayFast checkout needs the NXT server payment endpoint before payments can be accepted.'
-  );
+
+  const form = e.target;
+  const btn = form.querySelector('[type="submit"]');
+  const email = form.querySelector('[name="email"]')?.value?.trim();
+  const name = form.querySelector('[name="name"]')?.value?.trim();
+  const phone = form.querySelector('[name="phone"]')?.value?.trim();
+  const address = form.querySelector('[name="address"]')?.value?.trim();
+  const notes = form.querySelector('[name="notes"]')?.value?.trim() || '';
+
+  if (!email || !name || !phone || !address) {
+    notice('Please fill in all required fields.');
+    return false;
+  }
+
+  const cart = getCart();
+  const amount = cartTotal();
+  if (btn) btn.disabled = true;
+
+  try {
+    await startPaystackPayment({
+      type: 'shop',
+      email,
+      amount,
+      metadata: {
+        customer_name: name,
+        phone,
+        address,
+        notes,
+        items: cart.map((i) => `${i.qty}x ${i.name}`).join(', '),
+        cart_total: amount,
+      },
+      callbackPath: '/checkout.html',
+    });
+  } catch (err) {
+    notice(err.message || 'Payment could not start.');
+    if (btn) btn.disabled = false;
+  }
   return false;
 }
 
-function checkPaymentReturn() {
+// Backwards-compatible name used by checkout.html
+function handlePayFastCheckout(e) {
+  return handlePaystackCheckout(e);
+}
+
+async function checkPaymentReturn() {
   const params = new URLSearchParams(location.search);
-  const status = params.get('payment');
-  if (status === 'success') {
-    notice(
-      'Payment return received. Order confirmation must be verified by the secure payment server.'
-    );
-  }
-  if (status === 'cancelled') {
-    notice('Payment was cancelled. Your cart is still saved.');
-  }
-  if (status) {
-    params.delete('payment');
+  const payment = params.get('payment');
+  const reference = params.get('reference') || params.get('trxref');
+
+  // Clean URL once we start handling
+  if (payment || reference) {
+    const clean = new URLSearchParams(params);
+    clean.delete('payment');
+    clean.delete('reference');
+    clean.delete('trxref');
     history.replaceState(
       {},
       '',
-      location.pathname + (params.toString() ? '?' + params : '')
+      location.pathname + (clean.toString() ? '?' + clean : '')
     );
+  }
+
+  if (!reference && payment !== 'verify') return;
+
+  const ref = reference;
+  if (!ref) {
+    if (payment === 'cancelled') notice('Payment was cancelled.');
+    return;
+  }
+
+  notice('Verifying payment…');
+
+  try {
+    const res = await fetch('/api/paystack-verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reference: ref }),
+    });
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Verification failed.');
+
+    if (!payload.paid) {
+      notice(payload.message || 'Payment was not successful.');
+      return;
+    }
+
+    // Shop success
+    if (payload.metadata?.nxt_type === 'shop') {
+      saveCart([]);
+      notice('Payment successful! We will confirm your order by email.');
+      return;
+    }
+
+    // Tournament: server confirmed registration
+    if (payload.registration) {
+      try {
+        sessionStorage.removeItem('nxt_pending_registration');
+      } catch {}
+      notice('Payment successful — you are registered!');
+      if (typeof showCheckoutPanel === 'function') {
+        showCheckoutPanel({
+          registration: {
+            ...payload.registration,
+            payment_status: 'paid',
+            payment_method: payload.registration.payment_method || 'card',
+            payment_amount:
+              payload.registration.payment_amount ?? payload.amount ?? 0,
+          },
+        });
+      }
+      loadTournaments?.();
+      return;
+    }
+
+    // Client-side fallback insert if service role not configured
+    let pending = null;
+    try {
+      pending = JSON.parse(sessionStorage.getItem('nxt_pending_registration') || 'null');
+    } catch {
+      pending = null;
+    }
+
+    if (pending && supabaseClient) {
+      const { error } = await supabaseClient.from('registrations').insert({
+        tournament_id: Number(pending.tournament_id),
+        player_name: String(pending.player_name || '').trim(),
+        gamertag: String(pending.gamertag || '').trim(),
+        platform: pending.platform || 'PC',
+        email: pending.email || payload.email,
+        payment_reference: ref,
+        payment_status: 'paid',
+        amount_paid: payload.amount,
+      });
+      if (error) {
+        // Columns may not exist yet — try minimal insert
+        const { error: err2 } = await supabaseClient.from('registrations').insert({
+          tournament_id: Number(pending.tournament_id),
+          player_name: String(pending.player_name || '').trim(),
+          gamertag: String(pending.gamertag || '').trim(),
+          platform: pending.platform || 'PC',
+        });
+        if (err2) throw err2;
+      }
+      try {
+        sessionStorage.removeItem('nxt_pending_registration');
+      } catch {}
+      notice('Payment successful — you are registered!');
+      loadTournaments?.();
+      return;
+    }
+
+    notice('Payment successful!');
+  } catch (err) {
+    notice(err.message || 'Could not verify payment.');
   }
 }
 
@@ -573,11 +756,25 @@ async function loadTournaments() {
   }
 
   try {
-    const { data, error } = await supabaseClient
+    // Prefer status-based open/live listings; fall back to legacy `active` column
+    let data = null;
+    let error = null;
+
+    ({ data, error } = await supabaseClient
       .from('tournaments')
       .select('*')
-      .eq('active', true)
-      .order('created_at', { ascending: false });
+      .in('status', ['open', 'live'])
+      .order('created_at', { ascending: false }));
+
+    if (error) {
+      const legacy = await supabaseClient
+        .from('tournaments')
+        .select('*')
+        .eq('active', true)
+        .order('created_at', { ascending: false });
+      data = legacy.data;
+      error = legacy.error;
+    }
 
     if (error) throw error;
 
@@ -588,19 +785,24 @@ async function loadTournaments() {
     }
 
     container.innerHTML = data
-      .map(
-        (t) => `
+      .map((t) => {
+        const fee = Number(t.entry_fee) || 0;
+        const feeLabel = fee >= 1 ? `R ${fee.toFixed(0)} ENTRY` : 'FREE ENTRY';
+        const btnLabel = fee >= 1 ? `Register · R ${fee.toFixed(0)} ↗` : 'Register free ↗';
+        const dateRaw = t.starts_at || t.event_date;
+        const dateLabel = dateRaw
+          ? new Date(dateRaw).toLocaleDateString('en-ZA')
+          : 'Date TBA';
+        return `
       <article class="event-card">
-        <div class="event-status">OPEN · FREE ENTRY</div>
+        <div class="event-status">OPEN · ${feeLabel}</div>
         <h3>${escapeHtml(t.name)}</h3>
-        <p class="muted">${escapeHtml(t.format || 'Community tournament')} · ${
-          t.event_date
-            ? new Date(t.event_date).toLocaleDateString('en-ZA')
-            : 'Date TBA'
-        }</p>
-        <a class="button" href="#register" onclick="selectTournament(${Number(t.id)},'${safeJs(t.name)}')">Register free ↗</a>
-      </article>`
-      )
+        <p class="muted">${escapeHtml(t.format || 'Community tournament')} · ${dateLabel}</p>
+        <a class="button" href="#register" onclick="selectTournament(${Number(
+          t.id
+        )},'${safeJs(t.name)}',${fee})">${btnLabel}</a>
+      </article>`;
+      })
       .join('');
   } catch (e) {
     container.innerHTML =
@@ -608,43 +810,403 @@ async function loadTournaments() {
   }
 }
 
-function selectTournament(id, name) {
+function selectTournament(id, name, fee) {
   const s = document.getElementById('tournament-select');
   if (s) s.value = id;
   const n = document.getElementById('selected-tournament-name');
   if (n) n.textContent = name;
+  const feeEl = document.getElementById('entry-fee-value');
+  const feeNum = Number(fee) || 0;
+  if (feeEl) feeEl.value = feeNum;
+  const feeDisplay = document.getElementById('entry-fee-display');
+  if (feeDisplay) {
+    feeDisplay.textContent =
+      feeNum >= 1 ? `Entry fee: R ${feeNum.toFixed(0)}` : 'Free entry';
+  }
+
+  const methodGroup = document.getElementById('payment-method-group');
+  if (methodGroup) methodGroup.hidden = feeNum < 1;
+
+  const submitBtn = document.querySelector('#registration-form [type="submit"]');
+  if (submitBtn) {
+    submitBtn.textContent =
+      feeNum >= 1 ? `Continue · R ${feeNum.toFixed(0)} ↗` : 'Submit Registration ↗';
+  }
+
+  // Reset checkout if switching tournament mid-flow
+  hideCheckoutPanel();
+}
+
+function hideCheckoutPanel() {
+  const panel = document.getElementById('checkout-panel');
+  if (panel) panel.hidden = true;
+  const form = document.getElementById('registration-form');
+  if (form) form.hidden = false;
+}
+
+function showCheckoutPanel(payload) {
+  const panel = document.getElementById('checkout-panel');
+  const form = document.getElementById('registration-form');
+  if (!panel) return;
+  if (form) form.hidden = true;
+  panel.hidden = false;
+
+  const reg = payload.registration || {};
+  const bank = payload.bank_details || null;
+  const status = reg.payment_status || 'awaiting_payment';
+  const method = reg.payment_method || 'free';
+  const amount = Number(reg.payment_amount) || 0;
+
+  const tag = document.getElementById('checkout-status-tag');
+  const title = document.getElementById('checkout-title');
+  const summary = document.getElementById('checkout-summary');
+  if (tag) {
+    tag.textContent = statusLabel(status);
+    tag.className = 'tag status-' + status.replace(/_/g, '-');
+  }
+  if (title) {
+    title.textContent =
+      status === 'paid'
+        ? 'Registration confirmed'
+        : method === 'eft'
+          ? 'Complete EFT payment'
+          : method === 'card'
+            ? 'Pay with card'
+            : 'You are registered';
+  }
+  if (summary) {
+    summary.textContent = [
+      reg.tournament_name || '',
+      reg.player_name ? `· ${reg.player_name}` : '',
+      reg.gamertag ? `· ${reg.gamertag}` : '',
+    ]
+      .join(' ')
+      .replace(/^\s*·\s*/, '')
+      .trim();
+  }
+
+  setText('checkout-reg-id', reg.registration_id || '—');
+  setText('checkout-pay-ref', reg.payment_reference || '—');
+  setText(
+    'checkout-amount',
+    amount >= 0.01 ? `R ${amount.toFixed(2)}` : 'Free'
+  );
+
+  const eft = document.getElementById('eft-block');
+  const card = document.getElementById('card-block');
+  const success = document.getElementById('success-block');
+  if (eft) eft.hidden = true;
+  if (card) card.hidden = true;
+  if (success) success.hidden = true;
+
+  if (status === 'paid' || method === 'free') {
+    if (success) success.hidden = false;
+  } else if (method === 'eft') {
+    if (eft) eft.hidden = false;
+    if (bank) {
+      setText('bank-name', bank.bank_name || 'Contact NXT for bank details');
+      setText('bank-account-name', bank.account_name || '—');
+      setText('bank-account-number', bank.account_number || '—');
+      setText('bank-branch', bank.branch_code || '—');
+      setText('bank-reference', bank.reference || reg.payment_reference || '—');
+    } else {
+      setText('bank-name', 'Bank details not configured yet');
+      setText('bank-account-name', '—');
+      setText('bank-account-number', '—');
+      setText('bank-branch', '—');
+      setText('bank-reference', reg.payment_reference || '—');
+    }
+    // Store for proof submit
+    panel.dataset.registrationId = reg.registration_id || '';
+    panel.dataset.paymentReference = reg.payment_reference || '';
+    panel.dataset.email = reg.email || '';
+  } else if (method === 'card') {
+    if (card) card.hidden = false;
+    panel.dataset.registrationId = reg.registration_id || '';
+    panel.dataset.paymentReference = reg.payment_reference || '';
+    panel.dataset.email = reg.email || '';
+    panel.dataset.amount = String(amount);
+    panel.dataset.tournamentId = String(reg.tournament_id || '');
+    panel.dataset.playerName = reg.player_name || '';
+    panel.dataset.gamertag = reg.gamertag || '';
+    panel.dataset.platform = reg.platform || 'PC';
+    panel.dataset.eaId = reg.ea_id || '';
+    panel.dataset.discord = reg.discord_username || '';
+  }
+
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function statusLabel(status) {
+  const map = {
+    awaiting_payment: 'Awaiting payment',
+    payment_submitted: 'Payment submitted',
+    pending_verification: 'Pending verification',
+    paid: 'Paid',
+    payment_rejected: 'Payment rejected',
+    cancelled: 'Cancelled',
+    refunded: 'Refunded',
+  };
+  return map[status] || status;
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
 }
 
 async function handleRegistration(e) {
   e.preventDefault();
-  if (!supabaseClient) {
-    notice('Tournament registration is temporarily unavailable.');
+  const form = e.target;
+  const btn = form.querySelector('[type="submit"]');
+  const values = new FormData(form);
+  const tournamentId = Number(values.get('tournament_id'));
+  const playerName = String(values.get('player_name') || '').trim();
+  const eaId = String(values.get('ea_id') || '').trim();
+  const gamertag = String(values.get('gamertag') || '').trim();
+  const platform = values.get('platform') || 'PC';
+  const discordUsername = String(values.get('discord_username') || '').trim();
+  const email = String(values.get('email') || '').trim().toLowerCase();
+  const feeInput = values.get('entry_fee');
+  const entryFee = Number(
+    feeInput !== null && feeInput !== ''
+      ? feeInput
+      : document.getElementById('entry-fee-value')?.value || 0
+  );
+  let paymentMethod = String(values.get('payment_method') || '').toLowerCase();
+  if (entryFee < 1) paymentMethod = 'free';
+  if (entryFee >= 1 && !['eft', 'card'].includes(paymentMethod)) {
+    paymentMethod = 'eft';
+  }
+
+  if (!tournamentId) {
+    notice('Select a tournament first.');
+    return;
+  }
+  if (!playerName || !gamertag) {
+    notice('Name and gamertag are required.');
+    return;
+  }
+  if (entryFee >= 1 && !email) {
+    notice('Email is required for paid entry.');
     return;
   }
 
-  const form = e.target;
-  const btn = form.querySelector('[type="submit"]');
   btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Creating registration…';
 
   try {
-    const values = new FormData(form);
-    const { error } = await supabaseClient.from('registrations').insert({
-      tournament_id: Number(values.get('tournament_id')),
-      player_name: String(values.get('player_name') || '').trim(),
-      gamertag: String(values.get('gamertag') || '').trim(),
-      platform: values.get('platform'),
+    const headers = { 'Content-Type': 'application/json' };
+    try {
+      if (supabaseClient) {
+        const { data: sess } = await supabaseClient.auth.getSession();
+        const token = sess?.session?.access_token;
+        if (token) headers.Authorization = `Bearer ${token}`;
+      }
+    } catch {}
+
+    const res = await fetch('/api/registrations', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        tournament_id: tournamentId,
+        player_name: playerName,
+        ea_id: eaId || undefined,
+        gamertag,
+        platform,
+        discord_username: discordUsername || undefined,
+        email: email || undefined,
+        payment_method: paymentMethod,
+      }),
     });
-    if (error) throw error;
-    notice('Registration submitted successfully!');
-    form.reset();
-    loadTournaments();
+
+    let payload = {};
+    try {
+      payload = await res.json();
+    } catch {
+      payload = {};
+    }
+
+    if (!res.ok) {
+      throw new Error(payload.error || 'Could not create registration.');
+    }
+
+    showCheckoutPanel(payload);
+
+    if (payload.registration?.payment_status === 'paid') {
+      notice(payload.message || 'Registration confirmed!');
+      loadTournaments();
+    } else if (paymentMethod === 'card') {
+      notice('Registration created — continue to secure card payment.');
+    } else {
+      notice(payload.message || 'Registration created. Complete EFT with the reference shown.');
+    }
   } catch (err) {
     notice(err.message || 'Registration failed. Please try again.');
   } finally {
     btn.disabled = false;
+    btn.textContent = originalLabel;
   }
 }
 
+async function submitEftProof() {
+  const panel = document.getElementById('checkout-panel');
+  const fileInput = document.getElementById('eft-proof-file');
+  const btn = document.getElementById('eft-submit-btn');
+  if (!panel || !fileInput || !btn) return;
+
+  const file = fileInput.files && fileInput.files[0];
+  if (!file) {
+    notice('Choose a proof of payment file first.');
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    notice('Proof file must be 5 MB or smaller.');
+    return;
+  }
+
+  const registrationId = panel.dataset.registrationId;
+  const paymentReference = panel.dataset.paymentReference;
+  const email = panel.dataset.email || '';
+
+  if (!registrationId || !paymentReference) {
+    notice('Missing registration details. Please start again.');
+    return;
+  }
+
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Uploading proof…';
+
+  try {
+    const base64 = await fileToBase64(file);
+    const res = await fetch('/api/payments-eft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        registration_id: registrationId,
+        payment_reference: paymentReference,
+        email: email || undefined,
+        file_name: file.name,
+        content_type: file.type || 'application/octet-stream',
+        file_base64: base64,
+      }),
+    });
+
+    let payload = {};
+    try {
+      payload = await res.json();
+    } catch {
+      payload = {};
+    }
+
+    if (!res.ok) {
+      throw new Error(payload.error || 'Could not submit proof.');
+    }
+
+    notice(payload.message || 'Proof submitted. Pending verification.');
+    // Update panel state
+    const tag = document.getElementById('checkout-status-tag');
+    if (tag) {
+      tag.textContent = statusLabel('pending_verification');
+      tag.className = 'tag status-pending-verification';
+    }
+    const title = document.getElementById('checkout-title');
+    if (title) title.textContent = 'Proof submitted';
+    const eft = document.getElementById('eft-block');
+    if (eft) {
+      eft.innerHTML =
+        '<p style="margin:0;color:var(--success);font-weight:700">Proof received.</p>' +
+        '<p class="muted" style="margin:8px 0 0;font-size:13px">An admin will verify your payment. You will be confirmed once approved.</p>';
+    }
+  } catch (err) {
+    notice(err.message || 'Could not upload proof.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      const comma = result.indexOf(',');
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(new Error('Could not read file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function startCardPaymentFromCheckout() {
+  const panel = document.getElementById('checkout-panel');
+  const btn = document.getElementById('card-pay-btn');
+  if (!panel || !btn) return;
+
+  const email = panel.dataset.email;
+  const amount = Number(panel.dataset.amount) || 0;
+  if (!email || amount < 1) {
+    notice('Missing payment details. Please start registration again.');
+    return;
+  }
+
+  btn.disabled = true;
+  notice('Redirecting to Paystack…');
+
+  try {
+    await startPaystackPayment({
+      type: 'tournament',
+      email,
+      amount,
+      metadata: {
+        nxt_type: 'tournament',
+        tournament_id: Number(panel.dataset.tournamentId) || undefined,
+        nxt_registration_id: panel.dataset.registrationId || undefined,
+        payment_reference: panel.dataset.paymentReference || undefined,
+        player_name: panel.dataset.playerName || undefined,
+        gamertag: panel.dataset.gamertag || undefined,
+        platform: panel.dataset.platform || 'PC',
+        ea_id: panel.dataset.eaId || undefined,
+        discord_username: panel.dataset.discord || undefined,
+        email,
+      },
+      callbackPath: '/tournaments.html',
+    });
+  } catch (err) {
+    notice(err.message || 'Could not start card payment.');
+    btn.disabled = false;
+  }
+}
+
+function initRegistrationCheckout() {
+  const eftBtn = document.getElementById('eft-submit-btn');
+  if (eftBtn) eftBtn.addEventListener('click', submitEftProof);
+
+  const cardBtn = document.getElementById('card-pay-btn');
+  if (cardBtn) cardBtn.addEventListener('click', startCardPaymentFromCheckout);
+
+  const resetBtn = document.getElementById('checkout-reset-btn');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      hideCheckoutPanel();
+      const form = document.getElementById('registration-form');
+      if (form) form.reset();
+      const nameEl = document.getElementById('selected-tournament-name');
+      if (nameEl) nameEl.textContent = 'Select a tournament above';
+      const feeDisplay = document.getElementById('entry-fee-display');
+      if (feeDisplay) feeDisplay.textContent = 'Pick a tournament to see the entry fee';
+      const feeEl = document.getElementById('entry-fee-value');
+      if (feeEl) feeEl.value = '0';
+      const methodGroup = document.getElementById('payment-method-group');
+      if (methodGroup) methodGroup.hidden = true;
+      const submitBtn = document.querySelector('#registration-form [type="submit"]');
+      if (submitBtn) submitBtn.textContent = 'Submit Registration ↗';
+    });
+  }
+}
 
 // =====================================================
 // INQUIRY FORMS → Vercel /api/inquiries (Resend)
@@ -707,6 +1269,768 @@ function initInquiryForms() {
   });
 }
 
+
+
+// =====================================================
+// PLAYER AUTH + DASHBOARD + ADMIN
+// =====================================================
+
+function initPlayerAuthPage() {
+  const form = document.getElementById('player-auth-form');
+  if (!form || !supabaseClient) {
+    const s = document.getElementById('auth-status');
+    if (s) s.textContent = 'Authentication is not configured.';
+    return;
+  }
+
+  let mode = 'signin';
+  document.querySelectorAll('[data-auth-mode]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      mode = btn.getAttribute('data-auth-mode');
+      document.querySelectorAll('[data-auth-mode]').forEach((b) =>
+        b.classList.toggle('active', b === btn)
+      );
+      const signupOnly = mode === 'signup';
+      ['fullname-name-group', 'username-group', 'gamertag-group', 'platform-group'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.hidden = !signupOnly;
+      });
+      const submit = document.getElementById('auth-submit-btn');
+      if (submit) submit.textContent = signupOnly ? 'Create account ↗' : 'Sign in ↗';
+      const pwd = form.querySelector('[name="password"]');
+      if (pwd) pwd.autocomplete = signupOnly ? 'new-password' : 'current-password';
+    });
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const status = document.getElementById('auth-status');
+    const btn = document.getElementById('auth-submit-btn');
+    const values = Object.fromEntries(new FormData(form).entries());
+    const email = String(values.email || '').trim().toLowerCase();
+    const password = String(values.password || '');
+    if (!email || !password) {
+      if (status) status.textContent = 'Email and password are required.';
+      return;
+    }
+    if (btn) btn.disabled = true;
+    if (status) status.textContent = 'Please wait…';
+
+    try {
+      if (mode === 'signup') {
+        const { data, error } = await supabaseClient.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: String(values.full_name || '').trim(),
+              display_name: String(values.username || values.full_name || '').trim(),
+              username: String(values.username || '').trim(),
+            },
+          },
+        });
+        if (error) throw error;
+
+        const userId = data.user?.id;
+        if (userId) {
+          // Best-effort profile + player_profile (trigger may already create profile)
+          await supabaseClient.from('profiles').upsert({
+            id: userId,
+            email,
+            full_name: String(values.full_name || '').trim() || null,
+            display_name:
+              String(values.username || values.full_name || '').trim() || null,
+            username: String(values.username || '').trim() || null,
+          });
+          await supabaseClient.from('player_profiles').upsert({
+            user_id: userId,
+            gamertag: String(values.gamertag || '').trim() || null,
+            primary_platform: String(values.platform || '').trim() || null,
+          });
+        }
+
+        if (status) {
+          status.textContent = data.session
+            ? 'Account created. Redirecting…'
+            : 'Account created. Check your email to verify, then sign in.';
+        }
+        if (data.session) {
+          location.href = 'player-dashboard.html';
+          return;
+        }
+      } else {
+        const { error } = await supabaseClient.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        location.href = 'player-dashboard.html';
+        return;
+      }
+    } catch (err) {
+      if (status) status.textContent = err.message || 'Authentication failed.';
+      notice(err.message || 'Authentication failed.');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+}
+
+async function initPlayerDashboard() {
+  const loading = document.getElementById('dash-loading');
+  const signedOut = document.getElementById('dash-signed-out');
+  const content = document.getElementById('dash-content');
+
+  if (!supabaseClient) {
+    if (loading) loading.hidden = true;
+    if (signedOut) {
+      signedOut.hidden = false;
+      signedOut.querySelector('p').textContent =
+        'Supabase is not configured on this deployment.';
+    }
+    return;
+  }
+
+  const {
+    data: { session },
+  } = await supabaseClient.auth.getSession();
+
+  if (loading) loading.hidden = true;
+
+  if (!session) {
+    if (signedOut) signedOut.hidden = false;
+    return;
+  }
+
+  if (content) content.hidden = false;
+  if (signedOut) signedOut.hidden = true;
+
+  const user = session.user;
+  const emailEl = document.getElementById('dash-email');
+  if (emailEl) emailEl.textContent = user.email || '';
+
+  // Profile
+  const { data: profile } = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const { data: player } = await supabaseClient
+    .from('player_profiles')
+    .select('*')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  const display =
+    profile?.display_name ||
+    profile?.full_name ||
+    profile?.username ||
+    (user.email ? user.email.split('@')[0] : 'Player');
+  const nameEl = document.getElementById('dash-display-name');
+  if (nameEl) nameEl.textContent = display;
+
+  const setVal = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.value = v || '';
+  };
+  setVal('profile-display-name', profile?.display_name || profile?.full_name);
+  setVal('profile-username', profile?.username);
+  setVal('profile-gamertag', player?.gamertag);
+  setVal('profile-ea-id', player?.ea_id);
+  setVal('profile-platform', player?.primary_platform);
+  setVal('profile-discord', profile?.discord_username);
+
+  // Registrations owned by this user
+  const { data: regs, error: regErr } = await supabaseClient
+    .from('registrations')
+    .select('*, tournaments(name, format, status, entry_fee, starts_at)')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  const list = document.getElementById('dash-registrations');
+  const rows = !regErr && Array.isArray(regs) ? regs : [];
+
+  const paid = rows.filter((r) => r.payment_status === 'paid').length;
+  const pending = rows.filter((r) =>
+    ['awaiting_payment', 'payment_submitted', 'pending_verification'].includes(
+      r.payment_status
+    )
+  ).length;
+  setText('stat-total', String(rows.length));
+  setText('stat-paid', String(paid));
+  setText('stat-pending', String(pending));
+
+  if (list) {
+    if (!rows.length) {
+      list.innerHTML =
+        '<div class="panel"><p class="muted" style="margin:0">No tournament registrations linked to this account yet. <a href="tournaments.html#register" style="color:var(--blue2)">Enter a tournament</a> while signed in.</p></div>';
+    } else {
+      list.innerHTML = rows
+        .map((r) => {
+          const t = r.tournaments || {};
+          const fee = Number(r.payment_amount) || 0;
+          return `
+        <article class="event-card">
+          <div class="event-status">${escapeHtml(statusLabel(r.payment_status))}</div>
+          <h3>${escapeHtml(t.name || 'Tournament')}</h3>
+          <p class="muted" style="font-size:13px">
+            ${escapeHtml(r.gamertag || '')} · ${escapeHtml(r.platform || '')}<br>
+            Ref ${escapeHtml(r.registration_id || '')}<br>
+            ${fee >= 0.01 ? 'R ' + fee.toFixed(2) : 'Free'} · ${escapeHtml(r.payment_method || '')}
+          </p>
+          <a class="button outline" href="tournaments.html">View tournaments</a>
+        </article>`;
+        })
+        .join('');
+    }
+  }
+
+  const signOutBtn = document.getElementById('dash-signout');
+  if (signOutBtn) {
+    signOutBtn.onclick = async () => {
+      await supabaseClient.auth.signOut();
+      location.href = 'player-login.html';
+    };
+  }
+
+  const profileForm = document.getElementById('player-profile-form');
+  if (profileForm) {
+    profileForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = document.getElementById('profile-status');
+      const values = Object.fromEntries(new FormData(profileForm).entries());
+      if (status) status.textContent = 'Saving…';
+      try {
+        const { error: pErr } = await supabaseClient.from('profiles').upsert({
+          id: user.id,
+          email: user.email,
+          display_name: String(values.display_name || '').trim() || null,
+          username: String(values.username || '').trim() || null,
+          discord_username: String(values.discord_username || '').trim() || null,
+        });
+        if (pErr) throw pErr;
+        const { error: plErr } = await supabaseClient.from('player_profiles').upsert({
+          user_id: user.id,
+          gamertag: String(values.gamertag || '').trim() || null,
+          ea_id: String(values.ea_id || '').trim() || null,
+          primary_platform: String(values.platform || '').trim() || null,
+        });
+        if (plErr) throw plErr;
+        if (status) status.textContent = 'Profile saved.';
+        notice('Profile saved.');
+        const dn = document.getElementById('dash-display-name');
+        if (dn) dn.textContent = values.display_name || display;
+      } catch (err) {
+        if (status) status.textContent = err.message || 'Could not save profile.';
+        notice(err.message || 'Could not save profile.');
+      }
+    });
+  }
+}
+
+function initAdminPaymentsPage() {
+  const loadBtn = document.getElementById('admin-load-btn');
+  const exportBtn = document.getElementById('admin-export-btn');
+  const list = document.getElementById('admin-list');
+  const statusEl = document.getElementById('admin-status');
+  let lastRows = [];
+
+  async function load() {
+    const key = document.getElementById('admin-key')?.value?.trim();
+    const filter = document.getElementById('admin-status-filter')?.value || '';
+    if (!key) {
+      if (statusEl) statusEl.textContent = 'Enter the admin key.';
+      return;
+    }
+    if (statusEl) statusEl.textContent = 'Loading…';
+    try {
+      const res = await fetch('/api/admin-payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'list',
+          admin_key: key,
+          payment_status: filter || undefined,
+          limit: 100,
+        }),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'Load failed');
+      lastRows = payload.registrations || [];
+      setText(
+        'admin-revenue',
+        'R ' + (Number(payload.total_confirmed_revenue) || 0).toFixed(2)
+      );
+      if (statusEl) statusEl.textContent = `${lastRows.length} registration(s)`;
+      renderAdminRows(lastRows, key);
+    } catch (err) {
+      if (statusEl) statusEl.textContent = err.message || 'Failed';
+      if (list) list.innerHTML = `<p class="muted">${escapeHtml(err.message || 'Failed')}</p>`;
+    }
+  }
+
+  function renderAdminRows(rows, key) {
+    if (!list) return;
+    if (!rows.length) {
+      list.innerHTML = '<p class="muted">No registrations for this filter.</p>';
+      return;
+    }
+    list.innerHTML = rows
+      .map((r) => {
+        const tName = r.tournaments?.name || 'Tournament #' + r.tournament_id;
+        const canAct = ['pending_verification', 'payment_submitted', 'awaiting_payment'].includes(
+          r.payment_status
+        );
+        return `
+      <article class="panel admin-reg-card" data-reg="${escapeHtml(r.registration_id)}">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
+          <div>
+            <div class="tag status-${String(r.payment_status || '').replace(/_/g, '-')}">${escapeHtml(statusLabel(r.payment_status))}</div>
+            <h3 style="margin:8px 0 4px;font-size:16px">${escapeHtml(tName)}</h3>
+            <p class="muted" style="margin:0;font-size:13px">
+              ${escapeHtml(r.player_name || '')} · ${escapeHtml(r.gamertag || '')} · ${escapeHtml(r.platform || '')}<br>
+              ${escapeHtml(r.email || 'no email')} · ${escapeHtml(r.payment_method || '')}<br>
+              Reg ${escapeHtml(r.registration_id || '')} · Pay ${escapeHtml(r.payment_reference || '')}<br>
+              R ${(Number(r.payment_amount) || 0).toFixed(2)}
+            </p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;min-width:140px">
+            ${
+              canAct
+                ? `<button type="button" class="button" data-admin-action="approve" data-id="${escapeHtml(r.registration_id)}">Approve</button>
+                   <button type="button" class="outline" data-admin-action="reject" data-id="${escapeHtml(r.registration_id)}">Reject</button>`
+                : ''
+            }
+          </div>
+        </div>
+      </article>`;
+      })
+      .join('');
+
+    list.querySelectorAll('[data-admin-action]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const action = btn.getAttribute('data-admin-action');
+        const id = btn.getAttribute('data-id');
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/admin-payments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action,
+              admin_key: key,
+              registration_id: id,
+            }),
+          });
+          const payload = await res.json();
+          if (!res.ok) throw new Error(payload.error || 'Action failed');
+          notice(payload.message || 'Updated');
+          load();
+        } catch (err) {
+          notice(err.message || 'Action failed');
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+
+  if (loadBtn) loadBtn.addEventListener('click', load);
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      if (!lastRows.length) {
+        notice('Load registrations first.');
+        return;
+      }
+      const headers = [
+        'registration_id',
+        'payment_reference',
+        'player_name',
+        'gamertag',
+        'email',
+        'platform',
+        'payment_method',
+        'payment_status',
+        'payment_amount',
+        'tournament_id',
+        'created_at',
+      ];
+      const lines = [headers.join(',')];
+      lastRows.forEach((r) => {
+        lines.push(
+          headers
+            .map((h) => {
+              const v = r[h] == null ? '' : String(r[h]);
+              return `"${v.replace(/"/g, '""')}"`;
+            })
+            .join(',')
+        );
+      });
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'nxt-registrations.csv';
+      a.click();
+    });
+  }
+}
+
+
+
+
+// =====================================================
+// CREATOR DASHBOARD v2 + TOURNAMENT CREATE
+// =====================================================
+
+async function getAccessToken() {
+  if (!supabaseClient) return null;
+  const { data } = await supabaseClient.auth.getSession();
+  return data?.session?.access_token || null;
+}
+
+async function prefillRegistrationFromSession() {
+  const form = document.getElementById('registration-form');
+  if (!form || !supabaseClient) return;
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session?.user) return;
+    const uid = session.user.id;
+    const emailInput = form.querySelector('[name="email"]');
+    if (emailInput && !emailInput.value) {
+      emailInput.value = session.user.email || '';
+    }
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('display_name,full_name,discord_username')
+      .eq('id', uid)
+      .maybeSingle();
+    const { data: player } = await supabaseClient
+      .from('player_profiles')
+      .select('gamertag,ea_id,primary_platform')
+      .eq('user_id', uid)
+      .maybeSingle();
+    const setIfEmpty = (name, val) => {
+      const el = form.querySelector(`[name="${name}"]`);
+      if (el && !el.value && val) el.value = val;
+    };
+    setIfEmpty('player_name', profile?.full_name || profile?.display_name);
+    setIfEmpty('discord_username', profile?.discord_username);
+    setIfEmpty('gamertag', player?.gamertag);
+    setIfEmpty('ea_id', player?.ea_id);
+    if (player?.primary_platform) {
+      const sel = form.querySelector('[name="platform"]');
+      if (sel && !sel.value) sel.value = player.primary_platform;
+    }
+  } catch (e) {
+    console.warn('prefill registration', e);
+  }
+}
+
+async function initCreatorDashboardV2() {
+  const root = document.getElementById('creator-dash-root');
+  if (!root) return;
+
+  if (!supabaseClient) {
+    root.innerHTML = `<div class="panel" style="padding:28px"><p class="muted">Supabase is not configured.</p></div>`;
+    return;
+  }
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) {
+    root.innerHTML = `
+      <div class="panel" style="padding:28px;text-align:center">
+        <div class="eyebrow">CREATOR PORTAL</div>
+        <h2 style="margin:10px 0">Sign in to manage tournaments</h2>
+        <p class="muted">Use the creator login with your NXT account.</p>
+        <a class="button" href="creator-login.html" style="margin-top:12px">Creator login ↗</a>
+        <p class="muted" style="margin-top:14px;font-size:13px">Players can also use <a href="player-login.html" style="color:var(--blue2)">player login</a> — same Supabase auth.</p>
+      </div>`;
+    return;
+  }
+
+  const user = session.user;
+  const token = session.access_token;
+
+  // Ensure profile + optional creator role display
+  const { data: profile } = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const { data: rolesData } = await supabaseClient
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id);
+  const roles = (rolesData || []).map((r) => r.role);
+
+  const display =
+    profile?.display_name ||
+    profile?.full_name ||
+    (user.email ? user.email.split('@')[0] : 'Creator');
+
+  root.innerHTML = `
+    <div class="dashboard-welcome panel">
+      <div class="eyebrow">CREATOR DASHBOARD</div>
+      <h1 style="margin:8px 0 4px;font-size:28px">Hey, ${escapeHtml(display)}</h1>
+      <p class="muted" style="margin:0">${escapeHtml(user.email || '')}
+
+        ${roles.length ? ' · roles: ' + escapeHtml(roles.join(', ')) : ''}</p>
+      <div class="dashboard-actions">
+        <a class="button outline" href="player-dashboard.html">Player dashboard</a>
+        <button type="button" class="outline" id="creator-signout-v2">Sign out</button>
+      </div>
+      <div class="dashboard-note" style="margin-top:14px">
+        To create tournaments you need a <strong>creator</strong> or <strong>organiser</strong> role
+        (or an approved creator profile). Admins can grant roles in SQL — see PLATFORM.md.
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:24px;align-items:start">
+      <form id="create-tournament-form" class="panel">
+        <div class="tag">New competition</div>
+        <h3 style="margin:10px 0 14px">Create tournament</h3>
+        <div class="form-group">
+          <label>Tournament name</label>
+          <input name="name" required placeholder="e.g. Teazers R6 Open">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Game</label>
+            <select name="game_slug" id="create-game-select">
+              <option value="">Select game…</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Format</label>
+            <select name="format">
+              <option>Single elimination</option>
+              <option>Double elimination</option>
+              <option>Round robin</option>
+              <option>Groups + knockout</option>
+              <option>League</option>
+              <option>Custom</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Entry fee (ZAR)</label>
+            <input type="number" name="entry_fee" min="0" step="1" value="0">
+          </div>
+          <div class="form-group">
+            <label>Max players</label>
+            <input type="number" name="max_players" min="2" step="1" placeholder="e.g. 32">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Platform</label>
+            <select name="platform">
+              <option>PC</option>
+              <option>PlayStation</option>
+              <option>Xbox</option>
+              <option>Mobile</option>
+              <option>Cross-play</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Region</label>
+            <input name="region" placeholder="South Africa" value="South Africa">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea name="description" rows="3" placeholder="What players should know"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Rules (optional)</label>
+          <textarea name="rules" rows="3" placeholder="Eligibility, forfeit, dispute rules"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Prize description (optional)</label>
+          <input name="prize_description" placeholder="e.g. R2000 prize pool">
+        </div>
+        <div class="form-group">
+          <label>Publish status</label>
+          <select name="status">
+            <option value="draft">Save as draft</option>
+            <option value="open">Open registrations now</option>
+          </select>
+        </div>
+        <button type="submit" class="button" style="width:100%;padding:14px">Create tournament ↗</button>
+        <p class="form-status" id="create-tournament-status"></p>
+      </form>
+
+      <div>
+        <div class="sectionhead" style="margin-bottom:12px">
+          <div>
+            <div class="kicker">Your events</div>
+            <h2 style="font-size:20px;margin:0">Tournaments you organise</h2>
+          </div>
+        </div>
+        <div id="creator-tournaments-list" class="admin-list">
+          <p class="muted">Loading…</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('creator-signout-v2')?.addEventListener('click', async () => {
+    await supabaseClient.auth.signOut();
+    location.href = 'creator-login.html';
+  });
+
+  // Load games into select
+  try {
+    const gRes = await fetch('/api/tournaments', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ action: 'list_games' }),
+    });
+    const gPayload = await gRes.json();
+    const sel = document.getElementById('create-game-select');
+    if (sel && Array.isArray(gPayload.games)) {
+      gPayload.games.forEach((g) => {
+        const opt = document.createElement('option');
+        opt.value = g.slug;
+        opt.textContent = g.name;
+        sel.appendChild(opt);
+      });
+    }
+  } catch {}
+
+  async function refreshMine() {
+    const list = document.getElementById('creator-tournaments-list');
+    if (!list) return;
+    try {
+      const res = await fetch('/api/tournaments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: 'list_mine' }),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'Could not load');
+      const rows = payload.tournaments || [];
+      if (!rows.length) {
+        list.innerHTML =
+          '<div class="panel"><p class="muted" style="margin:0">No tournaments yet. Create one on the left.</p></div>';
+        return;
+      }
+      list.innerHTML = rows
+        .map((t) => {
+          const fee = Number(t.entry_fee) || 0;
+          return `
+          <article class="panel admin-reg-card">
+            <div class="tag">${escapeHtml(String(t.status || 'draft').toUpperCase())}</div>
+            <h3 style="margin:8px 0 4px;font-size:16px">${escapeHtml(t.name)}</h3>
+            <p class="muted" style="margin:0;font-size:13px">
+              ${escapeHtml(t.format || 'Format TBA')} · ${fee >= 1 ? 'R ' + fee.toFixed(0) : 'Free'}
+              ${t.max_players ? ' · max ' + t.max_players : ''}<br>
+              ${escapeHtml(t.platform || '')} ${t.region ? '· ' + escapeHtml(t.region) : ''}
+            </p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+              ${
+                t.status === 'draft'
+                  ? `<button type="button" class="button" data-set-status="open" data-id="${t.id}">Open registrations</button>`
+                  : ''
+              }
+              ${
+                t.status === 'open'
+                  ? `<button type="button" class="outline" data-set-status="closed" data-id="${t.id}">Close registration</button>`
+                  : ''
+              }
+              <a class="button outline" href="tournaments.html">View public list</a>
+            </div>
+          </article>`;
+        })
+        .join('');
+
+      list.querySelectorAll('[data-set-status]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            const res2 = await fetch('/api/tournaments', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                action: 'set_status',
+                tournament_id: Number(btn.getAttribute('data-id')),
+                status: btn.getAttribute('data-set-status'),
+              }),
+            });
+            const p = await res2.json();
+            if (!res2.ok) throw new Error(p.error || 'Update failed');
+            notice('Tournament updated');
+            refreshMine();
+          } catch (err) {
+            notice(err.message || 'Update failed');
+            btn.disabled = false;
+          }
+        });
+      });
+    } catch (err) {
+      list.innerHTML = `<p class="muted">${escapeHtml(err.message || 'Failed to load')}</p>`;
+    }
+  }
+
+  await refreshMine();
+
+  const form = document.getElementById('create-tournament-form');
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const status = document.getElementById('create-tournament-status');
+    const btn = form.querySelector('[type="submit"]');
+    const values = Object.fromEntries(new FormData(form).entries());
+    if (btn) btn.disabled = true;
+    if (status) status.textContent = 'Creating…';
+    try {
+      const res = await fetch('/api/tournaments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          action: 'create',
+          name: values.name,
+          game_slug: values.game_slug || undefined,
+          format: values.format,
+          entry_fee: Number(values.entry_fee) || 0,
+          max_players: values.max_players ? Number(values.max_players) : undefined,
+          platform: values.platform,
+          region: values.region,
+          description: values.description,
+          rules: values.rules,
+          prize_description: values.prize_description,
+          status: values.status || 'draft',
+        }),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'Create failed');
+      if (status) status.textContent = payload.message || 'Created.';
+      notice(payload.message || 'Tournament created');
+      form.reset();
+      refreshMine();
+    } catch (err) {
+      if (status) status.textContent = err.message || 'Failed';
+      notice(err.message || 'Could not create tournament');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
   updateCartUI();
   checkPaymentReturn();
@@ -718,6 +2042,8 @@ document.addEventListener('DOMContentLoaded', () => {
   renderTournaments();
   loadTournaments();
   initInquiryForms();
+  initRegistrationCheckout();
+  prefillRegistrationFromSession();
 
   const f = document.getElementById('registration-form');
   if (f) f.addEventListener('submit', handleRegistration);

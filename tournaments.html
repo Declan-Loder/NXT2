@@ -396,48 +396,99 @@
         <div class="sectionhead">
           <div>
             <div class="kicker">Enter the arena</div>
-            <h2>Register for free</h2>
+            <h2>Register to play</h2>
           </div>
           <p>
             Selected:
             <strong id="selected-tournament-name">
               Select a tournament above
             </strong>
+            <br>
+            <span id="entry-fee-display" class="muted">Pick a tournament to see the entry fee</span>
           </p>
         </div>
 
-        <div class="grid-2">
+        <div class="grid-2" id="registration-layout">
 
           <form id="registration-form" class="panel">
             <input type="hidden"
                    name="tournament_id"
                    id="tournament-select"
                    required>
+            <input type="hidden"
+                   name="entry_fee"
+                   id="entry-fee-value"
+                   value="0">
 
             <div class="form-group">
-              <label>Full name / Discord name</label>
+              <label>Full name</label>
               <input type="text"
                      name="player_name"
                      required
+                     autocomplete="name"
                      placeholder="Your name">
             </div>
 
-            <div class="form-group">
-              <label>Gamertag</label>
-              <input type="text"
-                     name="gamertag"
-                     required
-                     placeholder="In-game name">
+            <div class="form-row">
+              <div class="form-group">
+                <label>EA ID</label>
+                <input type="text"
+                       name="ea_id"
+                       placeholder="EA account ID">
+              </div>
+              <div class="form-group">
+                <label>Gamertag</label>
+                <input type="text"
+                       name="gamertag"
+                       required
+                       placeholder="In-game name">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Discord username</label>
+                <input type="text"
+                       name="discord_username"
+                       placeholder="name#0000 or @handle">
+              </div>
+              <div class="form-group">
+                <label>Platform</label>
+                <select name="platform">
+                  <option>PC</option>
+                  <option>PlayStation</option>
+                  <option>Xbox</option>
+                  <option>Mobile</option>
+                </select>
+              </div>
             </div>
 
             <div class="form-group">
-              <label>Platform</label>
-              <select name="platform">
-                <option>PC</option>
-                <option>PlayStation</option>
-                <option>Xbox</option>
-                <option>Mobile</option>
-              </select>
+              <label>Email <span class="muted">(required for paid entry)</span></label>
+              <input type="email"
+                     name="email"
+                     autocomplete="email"
+                     placeholder="you@email.com">
+            </div>
+
+            <div class="form-group" id="payment-method-group" hidden>
+              <label>Payment method</label>
+              <div class="pay-method-grid" role="radiogroup" aria-label="Payment method">
+                <label class="pay-method-card">
+                  <input type="radio" name="payment_method" value="eft" checked>
+                  <span class="pay-method-body">
+                    <strong>EFT / Bank transfer</strong>
+                    <span class="muted">Pay with unique reference · upload proof</span>
+                  </span>
+                </label>
+                <label class="pay-method-card">
+                  <input type="radio" name="payment_method" value="card">
+                  <span class="pay-method-body">
+                    <strong>Card (Paystack)</strong>
+                    <span class="muted">Secure online checkout · instant verify</span>
+                  </span>
+                </label>
+              </div>
             </div>
 
             <button type="submit"
@@ -447,24 +498,101 @@
             </button>
 
             <p class="muted" style="margin-top:12px;font-size:12px">
-              Free entry. You’ll get confirmation and details in Discord.
+              Free events confirm instantly. Paid entries create a unique reference first — then EFT or card.
             </p>
           </form>
 
-          <div class="featurebox">
-            <div class="tag">Need help?</div>
-            <h3>Join the Discord</h3>
-            <p>
-              Brackets, voice channels, results and announcements
-              drop first in Discord.
-            </p>
-            <a class="button"
-               href="https://discord.gg/Bxsw3Aam2"
-               target="_blank"
-               rel="noreferrer"
-               style="margin-top:12px">
-              Open Discord ↗
-            </a>
+          <div id="registration-side">
+            <!-- Checkout / confirmation panel (shown after create) -->
+            <div id="checkout-panel" class="panel checkout-panel" hidden>
+              <div class="tag" id="checkout-status-tag">Awaiting payment</div>
+              <h3 id="checkout-title" style="margin:10px 0 6px">Complete payment</h3>
+              <p class="muted" id="checkout-summary" style="margin:0 0 16px;font-size:14px"></p>
+
+              <div class="checkout-meta">
+                <div>
+                  <span class="muted">Registration</span>
+                  <strong id="checkout-reg-id">—</strong>
+                </div>
+                <div>
+                  <span class="muted">Reference</span>
+                  <strong id="checkout-pay-ref">—</strong>
+                </div>
+                <div>
+                  <span class="muted">Amount</span>
+                  <strong id="checkout-amount">—</strong>
+                </div>
+              </div>
+
+              <!-- EFT details -->
+              <div id="eft-block" hidden>
+                <div class="bank-card">
+                  <div class="bank-row"><span>Bank</span><strong id="bank-name">—</strong></div>
+                  <div class="bank-row"><span>Account name</span><strong id="bank-account-name">—</strong></div>
+                  <div class="bank-row"><span>Account number</span><strong id="bank-account-number">—</strong></div>
+                  <div class="bank-row"><span>Branch code</span><strong id="bank-branch">—</strong></div>
+                  <div class="bank-row highlight"><span>Payment reference</span><strong id="bank-reference">—</strong></div>
+                </div>
+                <p class="muted" style="font-size:12px;margin:12px 0">
+                  Use the payment reference exactly so we can match your transfer. Then upload proof below.
+                </p>
+
+                <div class="form-group">
+                  <label>Proof of payment</label>
+                  <input type="file"
+                         id="eft-proof-file"
+                         accept="image/jpeg,image/png,image/webp,application/pdf">
+                </div>
+                <button type="button"
+                        class="button"
+                        id="eft-submit-btn"
+                        style="width:100%;padding:14px">
+                  Submit proof ↗
+                </button>
+              </div>
+
+              <!-- Card CTA -->
+              <div id="card-block" hidden>
+                <p class="muted" style="font-size:13px;margin:0 0 14px">
+                  You will be redirected to Paystack’s secure checkout. Your spot is confirmed only after payment is verified.
+                </p>
+                <button type="button"
+                        class="button"
+                        id="card-pay-btn"
+                        style="width:100%;padding:14px">
+                  Pay with card ↗
+                </button>
+              </div>
+
+              <!-- Free / success -->
+              <div id="success-block" hidden>
+                <p style="margin:0 0 8px;color:var(--success);font-weight:700">You are registered.</p>
+                <p class="muted" style="margin:0;font-size:13px">Keep your registration ID for Discord and check-in.</p>
+              </div>
+
+              <button type="button"
+                      class="outline"
+                      id="checkout-reset-btn"
+                      style="width:100%;margin-top:14px;padding:12px">
+                Register another player
+              </button>
+            </div>
+
+            <div class="featurebox" id="discord-help-box">
+              <div class="tag">Need help?</div>
+              <h3>Join the Discord</h3>
+              <p>
+                Brackets, voice channels, results and announcements
+                drop first in Discord.
+              </p>
+              <a class="button"
+                 href="https://discord.gg/Bxsw3Aam2"
+                 target="_blank"
+                 rel="noreferrer"
+                 style="margin-top:12px">
+                Open Discord ↗
+              </a>
+            </div>
           </div>
 
         </div>

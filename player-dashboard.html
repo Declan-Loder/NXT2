@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d16">
+  <title>Player dashboard — NXT</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="nav">
+      <a class="brand" href="index.html">NXT<span>.</span></a>
+      <nav class="links">
+        <a href="index.html">Home</a>
+        <a href="tournaments.html">Tournaments</a>
+        <a href="player-dashboard.html" class="active">Dashboard</a>
+        <a href="creators.html">Creators</a>
+        <a href="shop.html">Shop</a>
+      </nav>
+      <div class="navright">
+        <a class="button outline" href="tournaments.html">Find tournaments</a>
+        <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="mobile-menu" id="mobile-menu">
+      <a href="index.html" onclick="closeMenu()">Home</a>
+      <a href="tournaments.html" onclick="closeMenu()">Tournaments</a>
+      <a href="player-dashboard.html" onclick="closeMenu()">Dashboard</a>
+      <a href="creators.html" onclick="closeMenu()">Creators</a>
+      <a href="shop.html" onclick="closeMenu()">Shop</a>
+    </div>
+
+    <main>
+      <section class="section">
+        <div id="dash-loading" class="panel" style="padding:28px">
+          <p class="muted" style="margin:0">Checking your session…</p>
+        </div>
+
+        <div id="dash-signed-out" class="panel" hidden style="padding:28px;text-align:center">
+          <div class="eyebrow">PLAYER DASHBOARD</div>
+          <h2 style="margin:10px 0">Sign in to continue</h2>
+          <p class="muted">Your tournaments, payments and profile live here.</p>
+          <a class="button" href="player-login.html" style="margin-top:12px">Sign in ↗</a>
+        </div>
+
+        <div id="dash-content" hidden>
+          <div class="dashboard-welcome panel">
+            <div class="eyebrow">PLAYER DASHBOARD</div>
+            <h1 style="margin:8px 0 4px;font-size:28px">
+              Welcome, <span id="dash-display-name">Player</span>
+            </h1>
+            <p class="muted" style="margin:0" id="dash-email"></p>
+            <div class="dashboard-stats" style="margin-top:18px">
+              <div class="dash-stat">
+                <b id="stat-total">0</b>
+                <span>Registrations</span>
+              </div>
+              <div class="dash-stat">
+                <b id="stat-paid">0</b>
+                <span>Confirmed</span>
+              </div>
+              <div class="dash-stat">
+                <b id="stat-pending">0</b>
+                <span>Pending payment</span>
+              </div>
+            </div>
+            <div class="dashboard-actions">
+              <a class="button" href="tournaments.html#register">Enter a tournament ↗</a>
+              <button type="button" class="outline" id="dash-signout">Sign out</button>
+            </div>
+          </div>
+
+          <div class="sectionhead" style="margin-top:28px">
+            <div>
+              <div class="kicker">My tournaments</div>
+              <h2>Registrations linked to your account</h2>
+            </div>
+          </div>
+
+          <div id="dash-registrations" class="grid-2">
+            <!-- filled by JS -->
+          </div>
+
+          <div class="sectionhead" style="margin-top:32px">
+            <div>
+              <div class="kicker">Profile</div>
+              <h2>Player details</h2>
+            </div>
+          </div>
+
+          <form id="player-profile-form" class="panel" style="max-width:560px">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Display name</label>
+                <input type="text" name="display_name" id="profile-display-name">
+              </div>
+              <div class="form-group">
+                <label>Username</label>
+                <input type="text" name="username" id="profile-username" placeholder="unique_username">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Gamertag</label>
+                <input type="text" name="gamertag" id="profile-gamertag">
+              </div>
+              <div class="form-group">
+                <label>EA ID</label>
+                <input type="text" name="ea_id" id="profile-ea-id">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Platform</label>
+                <select name="platform" id="profile-platform">
+                  <option value="">—</option>
+                  <option>PC</option>
+                  <option>PlayStation</option>
+                  <option>Xbox</option>
+                  <option>Mobile</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Discord</label>
+                <input type="text" name="discord_username" id="profile-discord">
+              </div>
+            </div>
+            <button type="submit" class="button">Save profile ↗</button>
+            <p class="form-status" id="profile-status"></p>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <a class="brand" href="index.html">NXT<span>.</span></a>
+      <span>Creators. Competition. Community.</span>
+      <span>© 2026 NXT · South Africa</span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      initPlayerDashboard();
+    });
+  </script>
+</body>
+</html>

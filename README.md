@@ -9,47 +9,91 @@ A static, multi-page community website for NXT: a South African creator network 
 - `collab.html` — collaboration page (form → `/api/inquiries`)
 - `sponsors.html` — brand/sponsorship page (form → `/api/inquiries`)
 - `tournaments.html` — standings (`data.js`) and Supabase tournament listings/registration
-- `shop.html` / `checkout.html` — NXT Supply **Coming Soon** (merch video + product preview; cart locked until drop). PayFast not live yet
+- `player-login.html` / `player-dashboard.html` — player auth + my tournaments
+- `admin.html` — payment registration admin (NXT_ADMIN_KEY)
+- `shop.html` / `checkout.html` — NXT Supply **Coming Soon** (merch video + product preview; cart locked until drop)
 
 ## Deployment
 Upload the contents of this folder to the GitHub repository connected to Vercel. Keep the root `index.html` at repository root. Vercel serves static files and the `/api/*` serverless functions.
 
 ### Required Vercel environment variables
+
 | Variable | Purpose |
 |----------|---------|
 | `RESEND_API_KEY` | Sends collab + sponsor form emails via Resend |
 | `TEST_EMAIL_SECRET` | Optional. Protects `/api/test-email` |
+| `PAYSTACK_SECRET_KEY` | Paystack secret key (card payments) |
+| `SUPABASE_URL` | Supabase project URL (server-side) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-side DB + storage access — **never** put in frontend |
+| `NXT_ADMIN_KEY` | Shared secret for `/api/admin-payments` (Stage 1 admin) |
+| `NXT_BANK_NAME` | EFT display: bank name |
+| `NXT_BANK_ACCOUNT_NAME` | EFT display: account name |
+| `NXT_BANK_ACCOUNT_NUMBER` | EFT display: account number |
+| `NXT_BANK_BRANCH_CODE` | EFT display: branch code |
 
-After setting `RESEND_API_KEY`, redeploy. Until a custom domain is verified in Resend, the API uses `onboarding@resend.dev` (Resend test sender).
+After setting keys, redeploy. Until a custom domain is verified in Resend, the API uses `onboarding@resend.dev`.
+
+---
+
+## Tournament registration & payments (Stage 1)
+
+### Schema
+Run `supabase/schema.sql` in the Supabase SQL Editor. It creates / extends:
+
+- `tournaments`
+- `registrations` (unique `registration_id`, `payment_reference`, full player fields, payment status machine)
+- `payments`
+- `payment_proofs`
+- `payment_audit_log`
+- Storage bucket `payment-proofs` (private, 5 MB, jpeg/png/webp/pdf)
+
+### API endpoints
+
+| Route | Purpose |
+|-------|---------|
+| `POST /api/registrations` | Create registration + unique IDs. Returns bank details when method is `eft`. |
+| `POST /api/payments-eft` | Upload EFT proof (base64), set status `pending_verification` |
+| `POST /api/paystack-initialize` | Start Paystack checkout (existing) |
+| `POST /api/paystack-verify` | Verify card payment server-side; mark registration `paid` |
+| `POST /api/admin-payments` | Admin list / approve / reject / note (requires `NXT_ADMIN_KEY`) |
+
+### Payment statuses
+`awaiting_payment` → `payment_submitted` / `pending_verification` → `paid` | `payment_rejected` | `cancelled` | `refunded`
+
+- **Free** tournaments → immediately `paid`
+- **EFT** → player pays with unique reference, uploads proof → admin approves
+- **Card (Paystack)** → only marked `paid` after server-side verify / webhook confirmation
+
+### Security notes
+- Service role key and Paystack secret stay on Vercel only
+- Card numbers never touch NXT servers
+- Players cannot change their own payment status
+- Admin actions are audited in `payment_audit_log`
+- NXT is not represented as a registered company; EFT remains fully usable
+
+### Frontend (Stage 2+)
+Registration form UX, checkout panels, and admin dashboard UI are next. Backend is ready for those screens.
+
+---
 
 ## What works out of the box
 - Static pages, navigation, cart (localStorage), scroll animations
 - Creator profiles (hardcoded in `app.js` → `NXT_CREATORS`)
 - Tournament group standings from `data.js`
 - Collab + sponsor forms post JSON to `/api/inquiries` (needs Resend key)
+- Paystack initialize + verify routes
+- Registration / EFT / admin API scaffolding (needs schema + env vars)
 
-## What still needs configuration (will not fully work until done)
+## What still needs configuration
 
-1. **Resend email**  
-   Set `RESEND_API_KEY` in Vercel. Verify a sending domain for production (replace `onboarding@resend.dev` in `api/inquiries.js` when ready).
-
-2. **Supabase Auth (creator login / dashboard)**  
-   - Confirm URL + anon key in `app.js` match your project  
-   - Auth → enable Email provider  
-   - Auth → URL config: production Site URL + redirect URLs  
-   - Dashboard is a full session UI (account overview, quick links, sign-out). Editable public profiles still need a `creator_profiles` table + RLS (not built yet)
-
-3. **Supabase tournaments**  
-   Tables expected by `app.js`:
-   - `tournaments` (id, name, format, status, …)
-   - `registrations` (tournament_id, player_name, gamertag, platform)  
-   With RLS policies that allow public read on open tournaments and insert on registrations. Without these tables, live tournament cards/registration fail gracefully.
-
-4. **PayFast checkout**  
-   Browser-side merchant keys were removed on purpose. Checkout shows a notice until a trusted serverless payment endpoint creates the signature and verifies ITNs. Do not put merchant key or passphrase in `app.js`.
-
-5. **Netlify forms**  
-   Removed. The site deploys on Vercel; forms use `/api/inquiries` instead.
+1. **Resend email** — set `RESEND_API_KEY`; verify a sending domain for production.
+2. **Supabase Auth** — URL + anon key in `app.js`; enable Email provider; set Site URL + redirects.
+3. **Supabase schema** — run `supabase/schema.sql`; set service role + bank env vars.
+4. **Paystack** — set `PAYSTACK_SECRET_KEY` for card path.
+5. **Admin key** — set `NXT_ADMIN_KEY` before using `/api/admin-payments`.
 
 ## Motion and accessibility
 Scroll reveal animations use IntersectionObserver and respect `prefers-reduced-motion`.
+
+
+See **PLATFORM.md** for the full audit, schema order, and roadmap.

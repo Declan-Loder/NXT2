@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#080d16">
   <title>Creator dashboard — NXT</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="wrap">
@@ -15,12 +16,12 @@
         <a href="index.html">Home</a>
         <a href="tournaments.html">Tournaments</a>
         <a href="creators.html">Creators</a>
-        <a href="collab.html">Collab</a>
+        <a href="creator-dashboard.html" class="active">Creator</a>
+        <a href="player-dashboard.html">Player</a>
         <a href="shop.html">Shop</a>
-        <a href="sponsors.html">Sponsors</a>
       </nav>
       <div class="navright">
-        <a class="button outline" href="creators.html">Meet creators</a>
+        <a class="button outline" href="tournaments.html">Public tournaments</a>
         <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
           <span></span><span></span><span></span>
         </button>
@@ -31,16 +32,19 @@
       <a href="index.html" onclick="closeMenu()">Home</a>
       <a href="tournaments.html" onclick="closeMenu()">Tournaments</a>
       <a href="creators.html" onclick="closeMenu()">Creators</a>
-      <a href="collab.html" onclick="closeMenu()">Collab</a>
+      <a href="creator-dashboard.html" onclick="closeMenu()">Creator</a>
+      <a href="player-dashboard.html" onclick="closeMenu()">Player</a>
       <a href="shop.html" onclick="closeMenu()">Shop</a>
-      <a href="sponsors.html" onclick="closeMenu()">Sponsors</a>
-      <div class="mobile-cta">
-        <a class="button" href="https://discord.gg/Bxsw3Aam2" target="_blank" rel="noreferrer">Join Discord ↗</a>
-      </div>
     </div>
 
-    <main id="creator-dashboard" class="dashboard-area">
-      <p class="muted">Checking your creator session…</p>
+    <main>
+      <section class="section">
+        <div id="creator-dash-root">
+          <div class="panel" style="padding:28px">
+            <p class="muted" style="margin:0">Checking your creator session…</p>
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer class="footer">
@@ -50,7 +54,12 @@
     </footer>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <div class="toast" id="toast" role="status"></div>
   <script src="app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      initCreatorDashboardV2();
+    });
+  </script>
 </body>
 </html>

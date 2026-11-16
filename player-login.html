@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d16">
+  <title>Player login — NXT</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="nav">
+      <a class="brand" href="index.html">NXT<span>.</span></a>
+      <nav class="links">
+        <a href="index.html">Home</a>
+        <a href="tournaments.html">Tournaments</a>
+        <a href="creators.html">Creators</a>
+        <a href="player-login.html" class="active">Player</a>
+        <a href="shop.html">Shop</a>
+      </nav>
+      <div class="navright">
+        <a class="button outline" href="tournaments.html">Browse tournaments</a>
+        <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="mobile-menu" id="mobile-menu">
+      <a href="index.html" onclick="closeMenu()">Home</a>
+      <a href="tournaments.html" onclick="closeMenu()">Tournaments</a>
+      <a href="creators.html" onclick="closeMenu()">Creators</a>
+      <a href="player-login.html" onclick="closeMenu()">Player</a>
+      <a href="shop.html" onclick="closeMenu()">Shop</a>
+    </div>
+
+    <main>
+      <section class="section" style="max-width:480px;margin:40px auto">
+        <div class="panel auth-card">
+          <div class="eyebrow">PLAYER PORTAL</div>
+          <h1 style="margin:8px 0 6px;font-size:28px">Sign in to NXT</h1>
+          <p class="muted" style="margin:0 0 20px;font-size:14px">
+            One account for tournaments, results and your player dashboard.
+          </p>
+
+          <div class="auth-tabs" role="tablist">
+            <button type="button" class="auth-tab active" data-auth-mode="signin">Sign in</button>
+            <button type="button" class="auth-tab" data-auth-mode="signup">Create account</button>
+          </div>
+
+          <form id="player-auth-form">
+            <div class="form-group" id="fullname-name-group" hidden>
+              <label>Full name</label>
+              <input type="text" name="full_name" placeholder="Your name" autocomplete="name">
+            </div>
+            <div class="form-group" id="username-group" hidden>
+              <label>Username</label>
+              <input type="text" name="username" placeholder="unique_username" autocomplete="username">
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" name="email" required placeholder="you@email.com" autocomplete="email">
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <input type="password" name="password" required minlength="6" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <div class="form-group" id="gamertag-group" hidden>
+              <label>Primary gamertag</label>
+              <input type="text" name="gamertag" placeholder="In-game name">
+            </div>
+            <div class="form-group" id="platform-group" hidden>
+              <label>Primary platform</label>
+              <select name="platform">
+                <option value="">Select…</option>
+                <option>PC</option>
+                <option>PlayStation</option>
+                <option>Xbox</option>
+                <option>Mobile</option>
+              </select>
+            </div>
+            <button type="submit" class="button" style="width:100%;padding:14px" id="auth-submit-btn">
+              Sign in ↗
+            </button>
+            <p class="form-status" id="auth-status" data-form-status></p>
+          </form>
+
+          <p class="muted" style="margin-top:18px;font-size:12px">
+            Creators: use the <a href="creator-login.html" style="color:var(--blue2)">creator portal</a>.
+            After sign-in you’ll land on your player dashboard.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <a class="brand" href="index.html">NXT<span>.</span></a>
+      <span>Creators. Competition. Community.</span>
+      <span>© 2026 NXT · South Africa</span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      initPlayerAuthPage();
+    });
+  </script>
+</body>
+</html>

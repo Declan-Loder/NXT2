@@ -1162,3 +1162,170 @@ header.nav,
   .merch-title { font-size: 48px; }
   .merch-cta-row .button { width: 100%; text-align: center; }
 }
+
+
+/* =========================================================
+   Tournament registration · payment method · checkout panel
+   ========================================================= */
+.pay-method-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.pay-method-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255,255,255,.02);
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+
+.pay-method-card:hover {
+  border-color: color-mix(in srgb, var(--blue) 50%, var(--line));
+}
+
+.pay-method-card:has(input:checked) {
+  border-color: var(--blue);
+  background: rgba(143, 201, 255, 0.07);
+}
+
+.pay-method-card input {
+  width: auto;
+  margin-top: 3px;
+  accent-color: var(--blue);
+}
+
+.pay-method-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.pay-method-body strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.checkout-panel .checkout-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--line);
+}
+
+.checkout-panel .checkout-meta span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 4px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.checkout-panel .checkout-meta strong {
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.bank-card {
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.bank-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.bank-row:last-child { border-bottom: 0; }
+.bank-row span { color: var(--muted); }
+.bank-row strong { text-align: right; font-weight: 700; }
+.bank-row.highlight {
+  background: rgba(200, 245, 42, 0.06);
+}
+.bank-row.highlight strong {
+  color: var(--lime);
+  letter-spacing: .02em;
+}
+
+.tag.status-awaiting-payment,
+.tag.status-payment-submitted {
+  color: var(--blue2);
+}
+.tag.status-pending-verification {
+  color: #fbbf24;
+}
+.tag.status-paid {
+  color: var(--success);
+}
+.tag.status-payment-rejected,
+.tag.status-cancelled,
+.tag.status-refunded {
+  color: var(--danger);
+}
+
+@media (max-width: 700px) {
+  .checkout-panel .checkout-meta {
+    grid-template-columns: 1fr;
+  }
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Auth tabs + admin list */
+.auth-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--line);
+}
+.auth-tab {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 10px 12px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.auth-tab.active {
+  background: var(--surface2);
+  color: var(--text);
+}
+.admin-list {
+  display: grid;
+  gap: 12px;
+}
+.admin-reg-card h3 { letter-spacing: -.02em; }
+.eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--lime);
+}

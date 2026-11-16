@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d16">
+  <title>Admin — NXT</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="nav">
+      <a class="brand" href="index.html">NXT<span>.</span></a>
+      <nav class="links">
+        <a href="index.html">Home</a>
+        <a href="tournaments.html">Tournaments</a>
+        <a href="admin.html" class="active">Admin</a>
+      </nav>
+      <div class="navright">
+        <a class="button outline" href="player-dashboard.html">Player dashboard</a>
+        <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="mobile-menu" id="mobile-menu">
+      <a href="index.html" onclick="closeMenu()">Home</a>
+      <a href="tournaments.html" onclick="closeMenu()">Tournaments</a>
+      <a href="admin.html" onclick="closeMenu()">Admin</a>
+    </div>
+
+    <main>
+      <section class="section">
+        <div class="sectionhead">
+          <div>
+            <div class="kicker">NXT management</div>
+            <h2>Payment & registration admin</h2>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:20px">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Admin key</label>
+              <input type="password" id="admin-key" placeholder="NXT_ADMIN_KEY from Vercel" autocomplete="off">
+            </div>
+            <div class="form-group">
+              <label>Filter status</label>
+              <select id="admin-status-filter">
+                <option value="">All statuses</option>
+                <option value="pending_verification">Pending verification</option>
+                <option value="awaiting_payment">Awaiting payment</option>
+                <option value="paid">Paid</option>
+                <option value="payment_rejected">Rejected</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button type="button" class="button" id="admin-load-btn">Load registrations ↗</button>
+            <button type="button" class="outline" id="admin-export-btn">Export CSV</button>
+          </div>
+          <p class="muted" style="margin:12px 0 0;font-size:13px">
+            Confirmed revenue (paid): <strong id="admin-revenue">R 0.00</strong>
+          </p>
+          <p class="form-status" id="admin-status"></p>
+        </div>
+
+        <div id="admin-list" class="admin-list">
+          <p class="muted">Enter admin key and load registrations.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <a class="brand" href="index.html">NXT<span>.</span></a>
+      <span>Admin · NXT</span>
+      <span>© 2026 NXT · South Africa</span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      initAdminPaymentsPage();
+    });
+  </script>
+</body>
+</html>
