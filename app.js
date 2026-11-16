@@ -962,6 +962,20 @@ async function handleRegistration(e) {
   e.preventDefault();
   const form = e.target;
   const btn = form.querySelector('[type="submit"]');
+
+  // Brief: users must be logged in before registering
+  if (supabaseClient) {
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) {
+        notice('Sign in to register for tournaments.');
+        const ret = encodeURIComponent(location.pathname + location.search + '#register');
+        setTimeout(() => { location.href = 'player-login.html?next=' + ret; }, 600);
+        return;
+      }
+    } catch {}
+  }
+
   const values = new FormData(form);
   const tournamentId = Number(values.get('tournament_id'));
   const playerName = String(values.get('player_name') || '').trim();
@@ -1358,7 +1372,7 @@ function initPlayerAuthPage() {
             : 'Account created. Check your email to verify, then sign in.';
         }
         if (data.session) {
-          location.href = 'player-dashboard.html';
+          playerAuthRedirect();
           return;
         }
       } else {
@@ -1367,7 +1381,7 @@ function initPlayerAuthPage() {
           password,
         });
         if (error) throw error;
-        location.href = 'player-dashboard.html';
+        playerAuthRedirect();
         return;
       }
     } catch (err) {
@@ -1875,6 +1889,47 @@ async function initCreatorDashboardV2() {
         <div id="creator-tournaments-list" class="admin-list">
           <p class="muted">Loading…</p>
         </div>
+
+        <div class="panel" style="margin-top:20px" id="fixture-manager">
+          <div class="tag">Fixtures</div>
+          <h3 style="margin:10px 0 12px">Add match</h3>
+          <p class="muted" style="font-size:13px;margin:0 0 12px">Requires <code>fixtures.sql</code>. Select a tournament you organise.</p>
+          <div class="form-group">
+            <label>Tournament ID</label>
+            <input type="number" id="fixture-tournament-id" placeholder="From your list above">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Player 1</label>
+              <input id="fixture-p1" placeholder="Name / gamertag">
+            </div>
+            <div class="form-group">
+              <label>Player 2</label>
+              <input id="fixture-p2" placeholder="Name / gamertag">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Round</label>
+              <input id="fixture-round" placeholder="e.g. Semi-final">
+            </div>
+            <div class="form-group">
+              <label>Match #</label>
+              <input type="number" id="fixture-num" placeholder="1">
+            </div>
+          </div>
+          <button type="button" class="button" id="fixture-create-btn" style="width:100%">Create match ↗</button>
+          <p class="form-status" id="fixture-status"></p>
+          <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+          <h3 style="margin:0 0 12px;font-size:16px">Record result</h3>
+          <div class="form-group"><label>Match ID</label><input id="result-match-id" placeholder="UUID from fixtures list"></div>
+          <div class="form-row">
+            <div class="form-group"><label>P1 score</label><input type="number" id="result-p1" value="0"></div>
+            <div class="form-group"><label>P2 score</label><input type="number" id="result-p2" value="0"></div>
+          </div>
+          <button type="button" class="button outline" id="result-save-btn" style="width:100%">Save result ↗</button>
+          <p class="form-status" id="result-status"></p>
+        </div>
       </div>
     </div>
   `;
@@ -1987,6 +2042,72 @@ async function initCreatorDashboardV2() {
   }
 
   await refreshMine();
+
+  document.getElementById('fixture-create-btn')?.addEventListener('click', async () => {
+    const status = document.getElementById('fixture-status');
+    const tournament_id = Number(document.getElementById('fixture-tournament-id')?.value);
+    if (!tournament_id) {
+      if (status) status.textContent = 'Enter a tournament ID from your list.';
+      return;
+    }
+    if (status) status.textContent = 'Creating…';
+    try {
+      const res = await fetch('/api/matches', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          action: 'create',
+          tournament_id,
+          player1_name: document.getElementById('fixture-p1')?.value,
+          player2_name: document.getElementById('fixture-p2')?.value,
+          round_label: document.getElementById('fixture-round')?.value,
+          match_number: document.getElementById('fixture-num')?.value,
+        }),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'Failed');
+      if (status) status.textContent = 'Match created: ' + (payload.match?.id || 'ok');
+      notice('Match created');
+    } catch (err) {
+      if (status) status.textContent = err.message || 'Failed';
+      notice(err.message || 'Could not create match');
+    }
+  });
+
+  document.getElementById('result-save-btn')?.addEventListener('click', async () => {
+    const status = document.getElementById('result-status');
+    const match_id = document.getElementById('result-match-id')?.value?.trim();
+    if (!match_id) {
+      if (status) status.textContent = 'Match ID required.';
+      return;
+    }
+    if (status) status.textContent = 'Saving…';
+    try {
+      const res = await fetch('/api/matches', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          action: 'update_result',
+          match_id,
+          player1_score: Number(document.getElementById('result-p1')?.value),
+          player2_score: Number(document.getElementById('result-p2')?.value),
+        }),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'Failed');
+      if (status) status.textContent = 'Result saved.';
+      notice('Result saved');
+    } catch (err) {
+      if (status) status.textContent = err.message || 'Failed';
+      notice(err.message || 'Could not save result');
+    }
+  });
 
   const form = document.getElementById('create-tournament-form');
   form?.addEventListener('submit', async (e) => {
@@ -2134,9 +2255,63 @@ async function initTournamentDetailPage() {
           <a class="button outline" href="player-login.html">Player login</a>
         </div>
       </div>
+      <div class="sectionhead" style="margin-top:32px">
+        <div>
+          <div class="kicker">Fixtures</div>
+          <h2>Match schedule &amp; results</h2>
+        </div>
+      </div>
+      <div id="tournament-matches" class="admin-list">
+        <p class="muted">Loading fixtures…</p>
+      </div>
     `;
+
+    loadTournamentMatches(id);
   } catch (err) {
     root.innerHTML = `<div class="panel" style="padding:28px"><p class="muted">${escapeHtml(err.message || 'Could not load tournament.')}</p></div>`;
+  }
+}
+
+async function loadTournamentMatches(tournamentId) {
+  const box = document.getElementById('tournament-matches');
+  if (!box) return;
+  try {
+    const res = await fetch('/api/matches', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'list', tournament_id: tournamentId }),
+    });
+    const payload = await res.json();
+    const matches = payload.matches || [];
+    if (!matches.length) {
+      box.innerHTML =
+        '<div class="empty-state">No fixtures published yet. Organisers can add matches from the creator dashboard after applying fixtures.sql.</div>';
+      return;
+    }
+    box.innerHTML = matches
+      .map((m) => {
+        const score =
+          m.status === 'completed' && m.player1_score != null
+            ? `${m.player1_score} – ${m.player2_score}`
+            : 'vs';
+        const when = m.scheduled_at
+          ? new Date(m.scheduled_at).toLocaleString('en-ZA')
+          : 'Time TBA';
+        return `<article class="panel admin-reg-card">
+          <div class="tag">${escapeHtml(String(m.status || '').toUpperCase())}${m.round_label ? ' · ' + escapeHtml(m.round_label) : ''}</div>
+          <h3 style="margin:8px 0 4px;font-size:16px">
+            ${escapeHtml(m.player1_name || 'TBD')}
+            <span class="muted" style="font-weight:600"> ${escapeHtml(score)} </span>
+            ${escapeHtml(m.player2_name || 'TBD')}
+          </h3>
+          <p class="muted" style="margin:0;font-size:13px">${escapeHtml(when)}
+            ${m.winner_name ? ' · Winner: ' + escapeHtml(m.winner_name) : ''}
+          </p>
+        </article>`;
+      })
+      .join('');
+  } catch (err) {
+    box.innerHTML = `<p class="muted">${escapeHtml(err.message || 'Could not load fixtures.')}</p>`;
   }
 }
 
@@ -2290,6 +2465,62 @@ function initAdminCreatorApplications() {
   }
 
   loadBtn.addEventListener('click', load);
+}
+
+
+
+
+async function initHomePage() {
+  // Featured tournaments from Supabase
+  const box = document.getElementById('home-tournaments');
+  if (box && supabaseClient) {
+    try {
+      let { data, error } = await supabaseClient
+        .from('tournaments')
+        .select('*')
+        .in('status', ['open', 'live'])
+        .order('created_at', { ascending: false })
+        .limit(3);
+      if (error) throw error;
+      if (!data?.length) {
+        box.innerHTML = '<div class="empty-state">No open tournaments right now. Check back soon or follow Discord for announcements.</div>';
+      } else {
+        box.innerHTML = data.map((t) => {
+          const fee = Number(t.entry_fee) || 0;
+          const feeLabel = fee >= 1 ? `R ${fee.toFixed(0)}` : 'Free';
+          const dateRaw = t.starts_at || t.event_date;
+          const dateLabel = dateRaw ? new Date(dateRaw).toLocaleDateString('en-ZA') : 'Date TBA';
+          return `<article class="event-card">
+            <div class="event-status">${escapeHtml(String(t.status||'open').toUpperCase())} · ${feeLabel}</div>
+            <h3>${escapeHtml(t.name)}</h3>
+            <p class="muted">${escapeHtml(t.format || 'Community tournament')} · ${dateLabel}</p>
+            <a class="button" href="tournament.html?id=${Number(t.id)}">View tournament</a>
+          </article>`;
+        }).join('');
+      }
+    } catch {
+      box.innerHTML = '<div class="empty-state">Tournaments will appear here when the connection is ready.</div>';
+    }
+  } else if (box) {
+    box.innerHTML = '<div class="empty-state">Tournaments will appear here when the connection is ready.</div>';
+  }
+
+  // Featured creators from static roster (until DB profiles drive directory)
+  const creatorsBox = document.getElementById('home-creators');
+  if (creatorsBox && typeof NXT_CREATORS === 'object') {
+    const entries = Object.entries(NXT_CREATORS).slice(0, 3);
+    if (!entries.length) {
+      creatorsBox.innerHTML = '<div class="empty-state">Creator profiles coming soon.</div>';
+    } else {
+      creatorsBox.innerHTML = entries.map(([id, c]) => `
+        <article class="card">
+          <h3>${escapeHtml(c.name || id)}</h3>
+          <p class="muted">${escapeHtml((c.games || []).slice(0, 3).join(' · ') || 'Creator')}</p>
+          <p>${escapeHtml((c.bio || '').slice(0, 120))}</p>
+          <a href="creator.html?id=${encodeURIComponent(id)}">View profile</a>
+        </article>`).join('');
+    }
+  }
 }
 
 

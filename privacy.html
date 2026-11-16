@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08090B">
+  <meta name="description" content="Privacy policy — NXT South Africa">
+  <title>Privacy policy — NXT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="wrap">
+        <header class="nav">
+      <a class="brand" href="index.html">NXT<span>.</span></a>
+      <nav class="links">
+        <a href="index.html">Home</a>
+        <a href="tournaments.html">Tournaments</a>
+        <a href="creators.html">Creators</a>
+        <a href="community.html">Community</a>
+        <a href="about.html" class="active">About</a>
+        <a href="shop.html">Shop</a>
+      </nav>
+      <div class="navright">
+        <a class="button outline" href="player-login.html">Login</a>
+        <a class="button" href="player-login.html">Register</a>
+        <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="mobile-menu" id="mobile-menu">
+      <a href="index.html" onclick="closeMenu()">Home</a>
+      <a href="tournaments.html" onclick="closeMenu()">Tournaments</a>
+      <a href="creators.html" onclick="closeMenu()">Creators</a>
+      <a href="community.html" onclick="closeMenu()">Community</a>
+      <a href="about.html" onclick="closeMenu()">About</a>
+      <a href="shop.html" onclick="closeMenu()">Shop</a>
+      <a href="player-login.html" onclick="closeMenu()">Login / Register</a>
+      <a href="sponsors.html" onclick="closeMenu()">Partnerships</a>
+      <a href="https://discord.gg/Bxsw3Aam2" target="_blank" rel="noreferrer" onclick="closeMenu()">Discord</a>
+    </div>
+
+</div>
+    <main>
+
+      <section class="section" style="max-width:720px;margin:32px auto">
+        <div class="panel" style="padding:28px">
+          <div class="eyebrow">LEGAL</div>
+          <h1 style="margin:8px 0 16px">Privacy policy</h1>
+          <p class="muted">Last updated: November 2026</p>
+          <p>NXT ("we") operates a South African gaming and creator platform. We collect account details (email, display name, optional gaming IDs), tournament registrations, payment references and proof uploads, and messages you send via forms.</p>
+          <p>Data is stored in Supabase and processed on Vercel. Payment card details are handled by the payment provider — we do not store card numbers.</p>
+          <p>We use your information to run competitions, verify payments, communicate about events and improve the platform. We do not sell personal data.</p>
+          <p>You may request access or deletion of your account data by contacting NXT through the contact page or Discord, subject to legal retention needs (e.g. payment records).</p>
+          <p>This policy may be updated as the platform grows. Continued use after changes means you accept the revised policy.</p>
+        </div>
+      </section>
+
+    </main>
+    <footer class="footer">
+      <a class="brand" href="index.html">NXT<span>.</span></a>
+      <span>Bringing content creators together for South Africa.</span>
+      <span>© 2026 NXT · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></span>
+    </footer>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>

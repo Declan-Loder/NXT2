@@ -93,7 +93,7 @@ Frontend anon key remains in `app.js` (publishable).
 | 4 Player dashboard | Done (v1: my registrations + profile) |
 | 5 Registration ↔ user link | Done (JWT → `user_id`) |
 | 6 Creator dashboard (full) | v1 live: create/list/open-close tournaments (`/api/tournaments`, creator-dashboard) |
-| 7 Multi-game tournament engine | Schema seeds + organiser columns; UI next |
+| 7 Multi-game tournament engine | Detail page + create flow live; fixtures still planned |
 | 8 Teams / fixtures / results | Planned |
 | 9 Payments | Done (EFT + card + admin) |
 | 10 Admin dashboard | Payments admin live; expand users/creators |
@@ -141,3 +141,16 @@ INSERT INTO public.creator_profiles (user_id, display_name, slug, verification_s
 VALUES ('USER-UUID-HERE', 'Display Name', 'display-slug', 'approved')
 ON CONFLICT (user_id) DO UPDATE SET verification_status = 'approved';
 ```
+
+
+### New pages this build
+- `tournament.html?id=` — public detail + register handoff
+- `creator-apply.html` — creator application form
+- Admin reviews applications on `admin.html`
+
+
+## Fixtures migration
+Run after platform-v2:
+3. `supabase/fixtures.sql` — matches, match_results, tournament_standings
+
+API: `POST /api/matches` (list public; create/result requires organiser auth)
