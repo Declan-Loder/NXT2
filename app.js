@@ -1293,6 +1293,7 @@ function initInquiryForms() {
 // =====================================================
 
 function initPlayerAuthPage() {
+  window.location.assign('player-dashboard.html');
   const form = document.getElementById('player-auth-form');
   if (!form || !supabaseClient) {
     const s = document.getElementById('auth-status');
