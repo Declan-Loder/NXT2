@@ -1377,13 +1377,15 @@ function initPlayerAuthPage() {
           return;
         }
       } else {
-        const { error } = await supabaseClient.auth.signInWithPassword({
-          email,
-          password,
-        });
+        const { data: signInData, error } =
+          await supabaseClient.auth.signInWithPassword({
+            email,
+            password,
+          });
+        
         if (error) throw error;
-        playerAuthRedirect();
-        return;
+        
+        const signedInUser = signInData?.user;
       }
     } catch (err) {
       if (status) status.textContent = err.message || 'Authentication failed.';
