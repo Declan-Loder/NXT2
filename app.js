@@ -1292,8 +1292,12 @@ function initInquiryForms() {
 // PLAYER AUTH + DASHBOARD + ADMIN
 // =====================================================
 
-function initPlayerAuthPage() {
+// Redirect an authenticated player to their dashboard.
+function playerAuthRedirect() {
   window.location.assign('player-dashboard.html');
+}
+
+function initPlayerAuthPage() {
   const form = document.getElementById('player-auth-form');
   if (!form || !supabaseClient) {
     const s = document.getElementById('auth-status');
@@ -1377,15 +1381,27 @@ function initPlayerAuthPage() {
           return;
         }
       } else {
-        const { data: signInData, error } =
-          await supabaseClient.auth.signInWithPassword({
-            email,
-            password,
-          });
-        
+        const { data: signInData, error } = await supabaseClient.auth.signInWithPassword({
+          email,
+          password,
+        });
         if (error) throw error;
-        
+
         const signedInUser = signInData?.user;
+        if (signedInUser?.id) {
+          // Ensure confirmed-email accounts also have a player profile row.
+          // ignoreDuplicates preserves any existing gamertag/platform details.
+          const { error: playerProfileError } = await supabaseClient
+            .from('player_profiles')
+            .upsert(
+              { user_id: signedInUser.id },
+              { onConflict: 'user_id', ignoreDuplicates: true }
+            );
+          if (playerProfileError) throw playerProfileError;
+        }
+
+        playerAuthRedirect();
+        return;
       }
     } catch (err) {
       if (status) status.textContent = err.message || 'Authentication failed.';
