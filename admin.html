@@ -118,6 +118,40 @@
         <div id="admin-creator-list" class="admin-list">
           <p class="muted">Load pending creator applications to review.</p>
         </div>
+
+        <div class="sectionhead" style="margin-top:40px">
+          <div>
+            <div class="kicker">NXT Supply</div>
+            <h2>Shop orders</h2>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:20px">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Filter status</label>
+              <select id="admin-shop-status-filter">
+                <option value="">All statuses</option>
+                <option value="pending_verification">Pending verification</option>
+                <option value="awaiting_payment">Awaiting payment</option>
+                <option value="paid">Paid</option>
+                <option value="payment_rejected">Rejected</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button type="button" class="button" id="admin-shop-load-btn">Load shop orders ↗</button>
+          </div>
+          <p class="muted" style="margin:12px 0 0;font-size:13px">
+            Confirmed shop revenue (paid): <strong id="admin-shop-revenue">R 0.00</strong>
+          </p>
+          <p class="form-status" id="admin-shop-status"></p>
+        </div>
+
+        <div id="admin-shop-list" class="admin-list">
+          <p class="muted">Enter admin key above and load shop orders.</p>
+        </div>
       </section>
     </main>
 
@@ -134,6 +168,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       initAdminPaymentsPage();
       initAdminCreatorApplications();
+      initAdminShopOrders();
     });
   </script>
 </body>

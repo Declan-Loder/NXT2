@@ -169,10 +169,9 @@ function safeJs(s) {
 }
 
 // =====================================================
-// PAYSTACK (server-side initialize + verify)
-// Secret key never leaves Vercel. Shop stays Coming Soon.
+// PAYSTACK (tournaments / optional card). Shop merch = EFT
+// via /api/shop-orders (checkout.html handles that flow).
 // =====================================================
-const SHOP_PAYMENTS_LIVE = false; // flip to true when merch drop goes live
 
 async function startPaystackPayment({ type, email, amount, metadata, callbackPath }) {
   const origin = location.origin;
@@ -205,7 +204,6 @@ async function startPaystackPayment({ type, email, amount, metadata, callbackPat
     throw new Error(payload.error || 'Could not start Paystack payment.');
   }
 
-  // Keep pending tournament details for post-verify client insert fallback
   if (type === 'tournament' && metadata) {
     try {
       sessionStorage.setItem(
@@ -218,57 +216,12 @@ async function startPaystackPayment({ type, email, amount, metadata, callbackPat
   location.href = payload.authorization_url;
 }
 
+// Legacy names — shop checkout is EFT in checkout.html
 async function handlePaystackCheckout(e) {
   e.preventDefault();
-  if (!SHOP_PAYMENTS_LIVE) {
-    notice('Payments unlock when the drop goes fully live. Your cart is saved — check back soon.');
-    return false;
-  }
-  if (!getCart().length) {
-    notice('Your cart is empty. Add some items first.');
-    return false;
-  }
-
-  const form = e.target;
-  const btn = form.querySelector('[type="submit"]');
-  const email = form.querySelector('[name="email"]')?.value?.trim();
-  const name = form.querySelector('[name="name"]')?.value?.trim();
-  const phone = form.querySelector('[name="phone"]')?.value?.trim();
-  const address = form.querySelector('[name="address"]')?.value?.trim();
-  const notes = form.querySelector('[name="notes"]')?.value?.trim() || '';
-
-  if (!email || !name || !phone || !address) {
-    notice('Please fill in all required fields.');
-    return false;
-  }
-
-  const cart = getCart();
-  const amount = cartTotal();
-  if (btn) btn.disabled = true;
-
-  try {
-    await startPaystackPayment({
-      type: 'shop',
-      email,
-      amount,
-      metadata: {
-        customer_name: name,
-        phone,
-        address,
-        notes,
-        items: cart.map((i) => `${i.qty}x ${i.name}`).join(', '),
-        cart_total: amount,
-      },
-      callbackPath: '/checkout.html',
-    });
-  } catch (err) {
-    notice(err.message || 'Payment could not start.');
-    if (btn) btn.disabled = false;
-  }
+  notice('Shop checkout uses EFT. Reload checkout.html if you still see this.');
   return false;
 }
-
-// Backwards-compatible name used by checkout.html
 function handlePayFastCheckout(e) {
   return handlePaystackCheckout(e);
 }
@@ -2467,8 +2420,111 @@ function initAdminCreatorApplications() {
   loadBtn.addEventListener('click', load);
 }
 
+function initAdminShopOrders() {
+  const loadBtn = document.getElementById('admin-shop-load-btn');
+  const list = document.getElementById('admin-shop-list');
+  const statusEl = document.getElementById('admin-shop-status');
+  if (!loadBtn || !list) return;
 
+  async function load() {
+    const key = document.getElementById('admin-key')?.value?.trim();
+    const filter = document.getElementById('admin-shop-status-filter')?.value || '';
+    if (!key) {
+      if (statusEl) statusEl.textContent = 'Enter the admin key above.';
+      return;
+    }
+    if (statusEl) statusEl.textContent = 'Loading…';
+    try {
+      const res = await fetch('/api/admin-shop-orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'list',
+          admin_key: key,
+          payment_status: filter || undefined,
+        }),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'Load failed');
+      const rows = payload.orders || [];
+      const rev = document.getElementById('admin-shop-revenue');
+      if (rev) rev.textContent = 'R ' + Number(payload.revenue || 0).toFixed(2);
+      if (statusEl) statusEl.textContent = `${rows.length} order(s)`;
+      if (!rows.length) {
+        list.innerHTML = '<p class="muted">No shop orders for this filter.</p>';
+        return;
+      }
+      list.innerHTML = rows
+        .map((o) => {
+          const items = Array.isArray(o.items)
+            ? o.items
+                .map((i) => `${i.qty}× ${escapeHtml(i.name || '')}`)
+                .join('<br>')
+            : '';
+          const canReview = ['pending_verification', 'awaiting_payment'].includes(
+            o.payment_status
+          );
+          return `
+        <article class="panel admin-reg-card">
+          <div class="tag">${escapeHtml(String(o.payment_status || '').toUpperCase())}</div>
+          <h3 style="margin:8px 0 4px;font-size:16px">${escapeHtml(o.order_number || '')}</h3>
+          <p class="muted" style="margin:0;font-size:13px">
+            ${escapeHtml(o.customer_name || '')} · ${escapeHtml(o.email || '')} · ${escapeHtml(o.phone || '')}<br>
+            R ${Number(o.total_amount || 0).toFixed(2)} · ${escapeHtml(o.created_at || '').slice(0, 19)}
+          </p>
+          <p style="margin:10px 0 0;font-size:13px">${items}</p>
+          <p class="muted" style="margin:8px 0 0;font-size:12px">${escapeHtml(o.address || '')}</p>
+          ${
+            o.proof_file_name
+              ? `<p class="muted" style="margin:6px 0 0;font-size:12px">Proof: ${escapeHtml(o.proof_file_name)}</p>`
+              : ''
+          }
+          ${
+            canReview
+              ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                   <button type="button" class="button" data-shop-action="approve" data-order="${escapeHtml(o.order_number)}">Mark paid</button>
+                   <button type="button" class="outline" data-shop-action="reject" data-order="${escapeHtml(o.order_number)}">Reject</button>
+                 </div>`
+              : ''
+          }
+        </article>`;
+        })
+        .join('');
 
+      list.querySelectorAll('[data-shop-action]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const action = btn.getAttribute('data-shop-action');
+          const order_number = btn.getAttribute('data-order');
+          const keyNow = document.getElementById('admin-key')?.value?.trim();
+          if (!keyNow || !order_number) return;
+          btn.disabled = true;
+          try {
+            const res2 = await fetch('/api/admin-shop-orders', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action,
+                admin_key: keyNow,
+                order_number,
+              }),
+            });
+            const p2 = await res2.json();
+            if (!res2.ok) throw new Error(p2.error || 'Action failed');
+            notice(p2.message || 'Updated');
+            load();
+          } catch (err) {
+            notice(err.message || 'Action failed');
+            btn.disabled = false;
+          }
+        });
+      });
+    } catch (err) {
+      if (statusEl) statusEl.textContent = err.message || 'Load failed';
+    }
+  }
+
+  loadBtn.addEventListener('click', load);
+}
 
 async function initHomePage() {
   // Featured tournaments from Supabase
