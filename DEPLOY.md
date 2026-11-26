@@ -4,7 +4,8 @@ Follow this order. Do not skip steps.
 
 ## 1. Supabase (SQL Editor — run in order)
 
-1. `supabase/schema.sql` — tournaments, registrations, payments, proofs, audit  
+1. `supabase/schema.sql` — tournaments, registrations, payments, proofs, audit
+   - If you already had an old `registrations` table and hit `payment_status does not exist`, run `supabase/migrate-existing-registrations.sql` first, then continue.  
 2. `supabase/platform-v2.sql` — profiles, roles, games, creator apps, user_id on registrations  
 3. `supabase/fixtures.sql` — matches, standings  
 4. Optional: `supabase/seed-demo.sql` — sample open tournament for testing  

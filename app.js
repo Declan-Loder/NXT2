@@ -221,7 +221,7 @@ async function startPaystackPayment({ type, email, amount, metadata, callbackPat
 async function handlePaystackCheckout(e) {
   e.preventDefault();
   if (!SHOP_PAYMENTS_LIVE) {
-    notice('NXT Supply is still Coming Soon. Checkout unlocks with the first drop.');
+    notice('Payments unlock when the drop goes fully live. Your cart is saved — check back soon.');
     return false;
   }
   if (!getCart().length) {
@@ -1292,11 +1292,6 @@ function initInquiryForms() {
 // PLAYER AUTH + DASHBOARD + ADMIN
 // =====================================================
 
-// Redirect an authenticated player to their dashboard.
-function playerAuthRedirect() {
-  window.location.assign('player-dashboard.html');
-}
-
 function initPlayerAuthPage() {
   const form = document.getElementById('player-auth-form');
   if (!form || !supabaseClient) {
@@ -1381,25 +1376,11 @@ function initPlayerAuthPage() {
           return;
         }
       } else {
-        const { data: signInData, error } = await supabaseClient.auth.signInWithPassword({
+        const { error } = await supabaseClient.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
-
-        const signedInUser = signInData?.user;
-        if (signedInUser?.id) {
-          // Ensure confirmed-email accounts also have a player profile row.
-          // ignoreDuplicates preserves any existing gamertag/platform details.
-          const { error: playerProfileError } = await supabaseClient
-            .from('player_profiles')
-            .upsert(
-              { user_id: signedInUser.id },
-              { onConflict: 'user_id', ignoreDuplicates: true }
-            );
-          if (playerProfileError) throw playerProfileError;
-        }
-
         playerAuthRedirect();
         return;
       }

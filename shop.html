@@ -4,15 +4,283 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#080d16">
-  <title>Shop — NXT Supply · Coming Soon</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+  <title>Shop — NXT Supply</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Shop-specific refinements */
+    .shop-hero {
+      position: relative;
+      border-radius: 24px;
+      overflow: hidden;
+      margin: 8px 0 36px;
+      min-height: 280px;
+      display: grid;
+      align-items: end;
+      background: linear-gradient(145deg, #0c1422, #060a12);
+      border: 1px solid var(--line);
+    }
+    .shop-hero-media {
+      position: absolute;
+      inset: 0;
+    }
+    .shop-hero-media video,
+    .shop-hero-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: .55;
+    }
+    .shop-hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 20%, rgba(6,10,18,.92) 100%);
+    }
+    .shop-hero-content {
+      position: relative;
+      z-index: 2;
+      padding: clamp(24px, 4vw, 40px);
+    }
+    .shop-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .16em;
+      color: var(--lime);
+      margin-bottom: 10px;
+    }
+    .shop-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--lime);
+      box-shadow: 0 0 12px var(--lime);
+    }
+    .shop-hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(32px, 6vw, 48px);
+      letter-spacing: -.04em;
+      line-height: 1.05;
+    }
+    .shop-hero h1 em {
+      font-style: normal;
+      color: var(--lime);
+    }
+    .shop-hero p {
+      margin: 0;
+      max-width: 420px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .storeitems {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 22px;
+    }
+
+    .product {
+      background: linear-gradient(160deg, rgba(21,35,56,.94), rgba(10,16,28,.98));
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform .28s ease, border-color .28s ease, box-shadow .28s ease;
+    }
+    .product:hover {
+      transform: translateY(-4px);
+      border-color: color-mix(in srgb, var(--blue) 40%, var(--line));
+      box-shadow: 0 22px 48px rgba(0,0,0,.28);
+    }
+
+    .productart {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #0c1422, #060a12);
+      border: 1px solid var(--line);
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+    .productart img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: opacity .25s ease;
+    }
+    .productart .art-fallback {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(ellipse at 30% 20%, rgba(200,245,42,.1), transparent 55%),
+        linear-gradient(145deg, #0c1422, #060a12);
+    }
+    .productart .art-fallback.white {
+      background:
+        radial-gradient(ellipse at 30% 20%, rgba(200,245,42,.08), transparent 55%),
+        linear-gradient(145deg, #e8ecf2, #c5ccd8);
+    }
+    .productart .art-fallback .mark {
+      font-size: 48px;
+      font-weight: 1000;
+      letter-spacing: -.06em;
+      font-style: italic;
+      color: rgba(244,248,255,.92);
+    }
+    .productart .art-fallback.white .mark {
+      color: #0a1220;
+    }
+    .productart .art-fallback .mark span {
+      color: #c8f52a;
+    }
+    .productart .view-toggle {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      z-index: 2;
+    }
+    .productart .view-toggle button {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.25);
+      background: rgba(0,0,0,.45);
+      color: #fff;
+      font-size: 11px;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
+    }
+    .productart .view-toggle button.active {
+      border-color: var(--lime);
+      background: rgba(200,245,42,.2);
+      color: var(--lime);
+    }
+
+    .product h4 {
+      margin: 4px 0 0;
+      font-size: 17px;
+      letter-spacing: -.02em;
+    }
+    .product .product-meta {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .product .price {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -.03em;
+      margin: 4px 0 6px;
+    }
+
+    .option-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .option-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .swatches {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      position: relative;
+      transition: transform .15s ease, border-color .15s ease;
+    }
+    .swatch:hover { transform: scale(1.08); }
+    .swatch.active {
+      border-color: var(--lime);
+      box-shadow: 0 0 0 2px rgba(200,245,42,.25);
+    }
+    .swatch.black { background: #111; }
+    .swatch.white {
+      background: #f2f4f8;
+      border: 1px solid #c5ccd8;
+    }
+    .swatch.white.active {
+      border: 2px solid var(--lime);
+    }
+
+    .size-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .size-pill {
+      min-width: 40px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface2, #0c1422);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color .15s, background .15s;
+    }
+    .size-pill:hover { border-color: var(--blue); }
+    .size-pill.active {
+      border-color: var(--lime);
+      background: rgba(200,245,42,.12);
+      color: var(--lime);
+    }
+    .size-pill:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+
+    .product .add-btn {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .shop-note {
+      margin-top: 28px;
+      padding: 18px 20px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(21,35,56,.5);
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .shop-note strong { color: var(--text); }
+
+    @media (max-width: 640px) {
+      .storeitems { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
   <div class="wrap">
-        <header class="nav">
+    <header class="nav">
       <a class="brand" href="index.html">NXT<span>.</span></a>
       <nav class="links">
         <a href="index.html">Home</a>
@@ -23,6 +291,10 @@
         <a href="shop.html" class="active">Shop</a>
       </nav>
       <div class="navright">
+        <button class="button outline cart-btn" type="button" onclick="openCart()" aria-label="Open cart">
+          Cart
+          <span class="cart-count" style="display:none">0</span>
+        </button>
         <a class="button outline" href="player-login.html">Login</a>
         <a class="button" href="player-login.html">Register</a>
         <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
@@ -44,113 +316,126 @@
     </div>
 
     <main>
-      <section class="merch-hero">
-        <div class="merch-hero-media">
-          <video
-            class="merch-video"
-            src="nxt-merch.mp4"
-            autoplay
-            muted
-            loop
-            playsinline
-            aria-label="NXT merch drop teaser"
-          ></video>
-          <div class="merch-hero-overlay"></div>
+      <section class="shop-hero">
+        <div class="shop-hero-media">
+          <video src="nxt-merch.mp4" autoplay muted loop playsinline aria-label="NXT merch"></video>
         </div>
-        <div class="merch-hero-content">
-          <div class="merch-badge">NXT SUPPLY</div>
-          <h1 class="merch-title">COMING<br><em>SOON.</em></h1>
-          <p class="merch-tagline">BUILT DIFFERENT.</p>
-          <p class="merch-sub">Premium streetwear. Clean design. Official NXT merch drops for creators who move different.</p>
-          <div class="merch-cta-row">
-            <a class="button" href="https://discord.gg/Bxsw3Aam2" target="_blank" rel="noreferrer">Get drop alerts on Discord ↗</a>
-            <a class="button outline" href="#preview">Preview the drop</a>
-          </div>
-          <div class="merch-micro">YOUR STYLE. YOUR IDENTITY. · SOUTH AFRICA</div>
+        <div class="shop-hero-overlay"></div>
+        <div class="shop-hero-content">
+          <div class="shop-badge">NXT SUPPLY · FIRST DROP</div>
+          <h1>Built different.<br><em>Wear it.</em></h1>
+          <p>Premium streetwear for creators who move different. Select colour & size, then add to cart.</p>
         </div>
       </section>
 
-      <section class="section" id="preview">
+      <section class="section" style="border-top:none;padding-top:0">
         <div class="sectionhead">
           <div>
-            <div class="kicker">FIRST DROP · PREVIEW</div>
-            <h2>What drops next.</h2>
+            <div class="kicker">ESSENTIALS</div>
+            <h2>Shop the drop.</h2>
           </div>
-          <p>These pieces are locked in. Checkout stays closed until the drop goes live — no fake stock, no half-ready cart.</p>
+          <p>All prices in ZAR. Shipping calculated at checkout when payments go live.</p>
         </div>
 
-        <div class="storeitems">
-          <article class="product coming-soon-card">
-            <div class="productart">
-              <span class="product-mark">NXT</span>
-              <span class="soon-pill">SOON</span>
+        <div class="storeitems" id="store-grid">
+          <!-- Hoodie -->
+          <article class="product" data-product="hoodie">
+            <div class="productart" id="art-hoodie">
+              <img id="img-hoodie" src="merch/hoodie-black-front.webp" alt="NXT Essential Hoodie" />
+              <div class="view-toggle" id="toggle-hoodie">
+                <button type="button" class="active" data-view="front" onclick="setHoodieView('front')">F</button>
+                <button type="button" data-view="back" onclick="setHoodieView('back')">B</button>
+              </div>
             </div>
-            <h4>Heavyweight Hoodie</h4>
-            <p>Premium streetwear · Black</p>
-            <div class="price">R 699.00</div>
-            <button class="button outline add-btn" type="button" disabled aria-disabled="true">Coming soon</button>
+            <h4>NXT Essential Hoodie</h4>
+            <p class="product-meta">Heavyweight fleece · Clean embroidery</p>
+            <div class="price" id="price-hoodie">R 799.00</div>
+
+            <div class="option-row">
+              <span class="option-label">Colour</span>
+              <div class="swatches" role="group" aria-label="Hoodie colour">
+                <button type="button" class="swatch black active" data-color="black" title="Black" aria-label="Black" onclick="selectColor('hoodie','black')"></button>
+                <button type="button" class="swatch white" data-color="white" title="White" aria-label="White" onclick="selectColor('hoodie','white')"></button>
+              </div>
+            </div>
+
+            <div class="option-row">
+              <span class="option-label">Size</span>
+              <div class="size-pills" role="group" aria-label="Hoodie size">
+                <button type="button" class="size-pill" data-size="S" onclick="selectSize('hoodie','S')">S</button>
+                <button type="button" class="size-pill active" data-size="M" onclick="selectSize('hoodie','M')">M</button>
+                <button type="button" class="size-pill" data-size="L" onclick="selectSize('hoodie','L')">L</button>
+                <button type="button" class="size-pill" data-size="XL" onclick="selectSize('hoodie','XL')">XL</button>
+                <button type="button" class="size-pill" data-size="XXL" onclick="selectSize('hoodie','XXL')">XXL</button>
+              </div>
+            </div>
+
+            <button class="button add-btn" type="button" onclick="addProduct('hoodie')">Add to cart</button>
           </article>
-          <article class="product coming-soon-card">
-            <div class="productart">
-              <span class="product-mark">NXT</span>
-              <span class="soon-pill">SOON</span>
+
+          <!-- T-Shirt -->
+          <article class="product" data-product="tee">
+            <div class="productart" id="art-tee">
+              <img id="img-tee" src="merch/tee-white.webp" alt="NXT Essential T-Shirt" style="display:none" />
+              <div class="art-fallback white" id="fallback-tee">
+                <div class="mark">NX<span>T</span></div>
+              </div>
             </div>
-            <h4>Everyday Track Pant</h4>
-            <p>Comfort-first fit · Black / Lime zip</p>
-            <div class="price">R 549.00</div>
-            <button class="button outline add-btn" type="button" disabled aria-disabled="true">Coming soon</button>
-          </article>
-          <article class="product coming-soon-card">
-            <div class="productart">
-              <span class="product-mark">NXT</span>
-              <span class="soon-pill">SOON</span>
-            </div>
-            <h4>Classic Tee</h4>
-            <p>Heavy cotton · Oversized</p>
+            <h4>NXT Essential T-Shirt</h4>
+            <p class="product-meta">Heavy cotton · Oversized fit</p>
             <div class="price">R 349.00</div>
-            <button class="button outline add-btn" type="button" disabled aria-disabled="true">Coming soon</button>
-          </article>
-          <article class="product coming-soon-card">
-            <div class="productart">
-              <span class="product-mark">NXT</span>
-              <span class="soon-pill">SOON</span>
+
+            <div class="option-row">
+              <span class="option-label">Colour</span>
+              <div class="swatches" role="group" aria-label="T-shirt colour">
+                <button type="button" class="swatch black" data-color="black" title="Black" aria-label="Black" onclick="selectColor('tee','black')"></button>
+                <button type="button" class="swatch white active" data-color="white" title="White" aria-label="White" onclick="selectColor('tee','white')"></button>
+              </div>
             </div>
-            <h4>Crewneck Sweat</h4>
-            <p>Soft fleece · Embroidered</p>
-            <div class="price">R 599.00</div>
-            <button class="button outline add-btn" type="button" disabled aria-disabled="true">Coming soon</button>
-          </article>
-          <article class="product coming-soon-card">
-            <div class="productart">
-              <span class="product-mark">NXT</span>
-              <span class="soon-pill">SOON</span>
+
+            <div class="option-row">
+              <span class="option-label">Size</span>
+              <div class="size-pills" role="group" aria-label="T-shirt size">
+                <button type="button" class="size-pill" data-size="S" onclick="selectSize('tee','S')">S</button>
+                <button type="button" class="size-pill active" data-size="M" onclick="selectSize('tee','M')">M</button>
+                <button type="button" class="size-pill" data-size="L" onclick="selectSize('tee','L')">L</button>
+                <button type="button" class="size-pill" data-size="XL" onclick="selectSize('tee','XL')">XL</button>
+                <button type="button" class="size-pill" data-size="XXL" onclick="selectSize('tee','XXL')">XXL</button>
+              </div>
             </div>
-            <h4>Signature Cap</h4>
-            <p>Structured fit · Black / Lime</p>
+
+            <button class="button add-btn" type="button" onclick="addProduct('tee')">Add to cart</button>
+          </article>
+
+          <!-- Cap -->
+          <article class="product" data-product="cap">
+            <div class="productart" id="art-cap">
+              <img id="img-cap" src="merch/cap.jpeg" alt="NXT Essential Cap – Black" />
+            </div>
+            <h4>NXT Essential Cap</h4>
+            <p class="product-meta">Structured fit · Embroidered logo</p>
             <div class="price">R 299.00</div>
-            <button class="button outline add-btn" type="button" disabled aria-disabled="true">Coming soon</button>
-          </article>
-          <article class="product coming-soon-card">
-            <div class="productart">
-              <span class="product-mark">NXT</span>
-              <span class="soon-pill">SOON</span>
+
+            <div class="option-row">
+              <span class="option-label">Colour</span>
+              <div class="swatches" role="group" aria-label="Cap colour">
+                <button type="button" class="swatch black active" data-color="black" title="Black" aria-label="Black" onclick="selectColor('cap','black')"></button>
+              </div>
             </div>
-            <h4>Beanie</h4>
-            <p>Knit · Lime detail</p>
-            <div class="price">R 199.00</div>
-            <button class="button outline add-btn" type="button" disabled aria-disabled="true">Coming soon</button>
+
+            <div class="option-row">
+              <span class="option-label">Size</span>
+              <div class="size-pills">
+                <button type="button" class="size-pill active" data-size="OS" onclick="selectSize('cap','OS')">One size</button>
+              </div>
+            </div>
+
+            <button class="button add-btn" type="button" onclick="addProduct('cap')">Add to cart</button>
           </article>
         </div>
-      </section>
 
-      <section class="section">
-        <div class="banner merch-waitlist">
-          <div>
-            <div class="kicker">DROP ALERTS</div>
-            <h2>Don't miss the first drop.</h2>
-            <p class="muted">Join the NXT Discord. When Supply goes live, you'll hear it there first.</p>
-          </div>
-          <a class="button" href="https://discord.gg/Bxsw3Aam2" target="_blank" rel="noreferrer">Join Discord ↗</a>
+        <div class="shop-note">
+          <strong>How it works.</strong> Pick colour and size on each piece, then Add to cart. Open the cart anytime to adjust quantities. Checkout is ready — payments unlock fully when the drop is marked live (Paystack, ZAR). Questions? Hit Discord.
         </div>
       </section>
     </main>
@@ -175,11 +460,159 @@
         <span id="cart-total-value">R 0.00</span>
       </div>
       <a class="button" href="checkout.html" style="width:100%;display:block;text-align:center" onclick="closeCart()">Go to Checkout ↗</a>
-      <p class="tiny-note" style="margin-top:10px;text-align:center">Shop is in coming-soon mode. Checkout will unlock with the first drop.</p>
+      <p class="tiny-note" style="margin-top:10px;text-align:center">Select colour & size before adding. Payments unlock with the live drop.</p>
     </div>
   </div>
 
   <div class="toast" id="toast" role="status"></div>
   <script src="app.js"></script>
+  <script>
+    // Product state
+    const products = {
+      hoodie: {
+        name: 'NXT Essential Hoodie',
+        price: 799,
+        color: 'black',
+        size: 'M',
+        views: {
+          black: {
+            front: 'merch/hoodie-black-front.webp',
+            back: 'merch/hoodie-black-back.webp'
+          },
+          white: null // no photo yet — fallback
+        }
+      },
+      tee: {
+        name: 'NXT Essential T-Shirt',
+        price: 349,
+        color: 'white',
+        size: 'M',
+        views: {
+          white: 'merch/tee-white.webp',
+          black: null
+        }
+      },
+      cap: {
+        name: 'NXT Essential Cap',
+        price: 299,
+        color: 'black',
+        size: 'OS',
+        views: {
+          black: 'merch/cap.jpeg'
+        }
+      }
+    };
+
+    let hoodieView = 'front';
+
+    function selectColor(product, color) {
+      const p = products[product];
+      if (!p) return;
+      p.color = color;
+
+      const card = document.querySelector(`[data-product="${product}"]`);
+      card.querySelectorAll('.swatch').forEach((s) => {
+        s.classList.toggle('active', s.dataset.color === color);
+      });
+
+      if (product === 'hoodie') {
+        updateHoodieArt();
+      } else if (product === 'tee') {
+        updateTeeArt();
+      }
+    }
+
+    function selectSize(product, size) {
+      const p = products[product];
+      if (!p) return;
+      p.size = size;
+      const card = document.querySelector(`[data-product="${product}"]`);
+      card.querySelectorAll('.size-pill').forEach((s) => {
+        s.classList.toggle('active', s.dataset.size === size);
+      });
+    }
+
+    function setHoodieView(view) {
+      hoodieView = view;
+      document.querySelectorAll('#toggle-hoodie button').forEach((b) => {
+        b.classList.toggle('active', b.dataset.view === view);
+      });
+      updateHoodieArt();
+    }
+
+    function updateHoodieArt() {
+      const p = products.hoodie;
+      const img = document.getElementById('img-hoodie');
+      const art = document.getElementById('art-hoodie');
+      let fallback = art.querySelector('.art-fallback');
+
+      if (p.color === 'black' && p.views.black) {
+        const src = p.views.black[hoodieView] || p.views.black.front;
+        img.src = src;
+        img.style.display = 'block';
+        img.alt = `NXT Essential Hoodie – Black (${hoodieView})`;
+        if (fallback) fallback.remove();
+        document.getElementById('toggle-hoodie').style.display = 'flex';
+      } else {
+        // White or missing — CSS fallback
+        img.style.display = 'none';
+        if (!fallback) {
+          fallback = document.createElement('div');
+          fallback.className = 'art-fallback white';
+          fallback.innerHTML = '<div class="mark">NX<span>T</span></div>';
+          art.insertBefore(fallback, art.firstChild);
+        } else {
+          fallback.className = 'art-fallback white';
+        }
+        document.getElementById('toggle-hoodie').style.display = 'none';
+      }
+    }
+
+    function updateTeeArt() {
+      const p = products.tee;
+      const img = document.getElementById('img-tee');
+      const fallback = document.getElementById('fallback-tee');
+
+      if (p.color === 'white' && p.views.white) {
+        img.src = p.views.white;
+        img.style.display = 'block';
+        img.alt = 'NXT Essential T-Shirt – White';
+        fallback.style.display = 'none';
+      } else {
+        // Black tee fallback
+        img.style.display = 'none';
+        fallback.style.display = 'grid';
+        fallback.className = 'art-fallback';
+        fallback.innerHTML = '<div class="mark">NX<span>T</span></div>';
+      }
+    }
+
+    function addProduct(key) {
+      const p = products[key];
+      if (!p) return;
+      if (!p.color) {
+        notice('Please select a colour first.');
+        return;
+      }
+      if (!p.size) {
+        notice('Please select a size.');
+        return;
+      }
+
+      const colorLabel = p.color.charAt(0).toUpperCase() + p.color.slice(1);
+      const sizeLabel = p.size === 'OS' ? 'One size' : p.size;
+      const displayName = `${p.name} – ${colorLabel} / ${sizeLabel}`;
+      const id = `${key}-${p.color}-${p.size}`.toLowerCase();
+
+      addToCart(id, displayName, p.price);
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+      updateHoodieArt();
+      updateTeeArt();
+      if (typeof updateCartUI === 'function') updateCartUI();
+    });
+  </script>
 </body>
 </html>
