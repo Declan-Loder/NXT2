@@ -59,6 +59,41 @@ CREATE TABLE IF NOT EXISTS public.registrations (
   updated_at          timestamptz NOT NULL DEFAULT now()
 );
 
+-- If registrations already existed (older NXT), add missing columns
+ALTER TABLE public.registrations
+  ADD COLUMN IF NOT EXISTS registration_id text,
+  ADD COLUMN IF NOT EXISTS ea_id text,
+  ADD COLUMN IF NOT EXISTS discord_username text,
+  ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS payment_reference text,
+  ADD COLUMN IF NOT EXISTS payment_amount numeric(10,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS payment_method text DEFAULT 'free',
+  ADD COLUMN IF NOT EXISTS payment_status text DEFAULT 'awaiting_payment',
+  ADD COLUMN IF NOT EXISTS admin_notes text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
+
+-- Backfill IDs for any legacy rows (required before unique indexes)
+UPDATE public.registrations
+SET registration_id = 'NXT-R-LEGACY-' || substr(md5(random()::text || coalesce(gamertag,'') || clock_timestamp()::text), 1, 8)
+WHERE registration_id IS NULL OR registration_id = '';
+
+UPDATE public.registrations
+SET payment_reference = 'NXT-P-LEGACY-' || substr(md5(random()::text || coalesce(gamertag,'') || clock_timestamp()::text), 1, 8)
+WHERE payment_reference IS NULL OR payment_reference = '';
+
+DO $$
+BEGIN
+  BEGIN
+    ALTER TABLE public.registrations ADD CONSTRAINT registrations_registration_id_key UNIQUE (registration_id);
+  EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL;
+  END;
+  BEGIN
+    ALTER TABLE public.registrations ADD CONSTRAINT registrations_payment_reference_key UNIQUE (payment_reference);
+  EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL;
+  END;
+END $$;
+
 -- Helpful indexes
 CREATE INDEX IF NOT EXISTS idx_registrations_tournament
   ON public.registrations (tournament_id);
