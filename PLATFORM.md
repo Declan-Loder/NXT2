@@ -39,7 +39,7 @@
 
 ### Security posture
 - Service role + Paystack secret only on Vercel ✓
-- Admin APIs gated by Supabase JWT + `user_roles` (admin / superadmin / moderator), checked server-side
+- Admin payments gated by `NXT_ADMIN_KEY` (Stage 1; upgrade to role claim later)
 - RLS enabled on identity tables; registration insert public for form UX, ownership via `user_id`
 - Card data never stored ✓
 - Players cannot flip payment status from the browser ✓
@@ -75,6 +75,7 @@ ON CONFLICT DO NOTHING;
 | `SUPABASE_URL` | Server APIs |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server APIs |
 | `PAYSTACK_SECRET_KEY` | Card payments |
+| `NXT_ADMIN_KEY` | Admin payments UI/API |
 | `NXT_BANK_*` | EFT display |
 | `RESEND_API_KEY` | Collab/sponsor email |
 

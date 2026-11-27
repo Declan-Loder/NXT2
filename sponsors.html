@@ -14,13 +14,12 @@
   <div class="wrap">
         <header class="nav">
       <a class="brand" href="index.html">NXT<span>.</span></a>
-      <nav class="links" aria-label="Main">
+      <nav class="links">
+        <a href="index.html">Home</a>
         <a href="tournaments.html">Tournaments</a>
-        <a href="discover.html">Discover</a>
-        <a href="leaderboards.html">Leaderboards</a>
-        <a href="communities.html">Communities</a>
         <a href="creators.html">Creators</a>
-        <a href="about.html">About</a>
+        <a href="community.html">Community</a>
+        <a href="about.html" class="active">About</a>
         <a href="shop.html">Shop</a>
       </nav>
       <div class="navright">
@@ -35,15 +34,10 @@
     <div class="mobile-menu" id="mobile-menu">
       <a href="index.html" onclick="closeMenu()">Home</a>
       <a href="tournaments.html" onclick="closeMenu()">Tournaments</a>
-      <a href="discover.html" onclick="closeMenu()">Discover</a>
-      <a href="leaderboards.html" onclick="closeMenu()">Leaderboards</a>
-      <a href="communities.html" onclick="closeMenu()">Communities</a>
       <a href="creators.html" onclick="closeMenu()">Creators</a>
-      <a href="teams.html" onclick="closeMenu()">Teams</a>
-      <a href="challenges.html" onclick="closeMenu()">Matches</a>
+      <a href="community.html" onclick="closeMenu()">Community</a>
       <a href="about.html" onclick="closeMenu()">About</a>
       <a href="shop.html" onclick="closeMenu()">Shop</a>
-      <a href="community.html" onclick="closeMenu()">NXT Community</a>
       <a href="player-login.html" onclick="closeMenu()">Login / Register</a>
       <a href="sponsors.html" onclick="closeMenu()">Partnerships</a>
       <a href="https://discord.gg/Bxsw3Aam2" target="_blank" rel="noreferrer" onclick="closeMenu()">Discord</a>
@@ -175,7 +169,7 @@
     <footer class="footer">
       <a class="brand" href="index.html">NXT<span>.</span></a>
       <span>Creators. Competition. Community.</span>
-      <span>© 2026 NXT · South Africa</span>
+      <span>© 2026 NXT · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="refund-policy.html">Refunds</a> · <a href="shipping-policy.html">Shipping</a></span>
     </footer>
   </div>
 
@@ -189,9 +183,6 @@
     </div>
   </div>
   <div class="toast" id="toast" role="status"></div>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
-  <script src="js/config.js"></script>
-  <script src="js/nxt.js"></script>
 </body>
 </html>

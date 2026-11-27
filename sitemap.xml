@@ -12,4 +12,16 @@
   <url><loc>/creator-apply.html</loc></url>
   <url><loc>/privacy.html</loc></url>
   <url><loc>/terms.html</loc></url>
+  <url>
+    <loc>https://nxt2-seven.vercel.app/terms.html</loc>
+  </url>
+  <url>
+    <loc>https://nxt2-seven.vercel.app/privacy.html</loc>
+  </url>
+  <url>
+    <loc>https://nxt2-seven.vercel.app/refund-policy.html</loc>
+  </url>
+  <url>
+    <loc>https://nxt2-seven.vercel.app/shipping-policy.html</loc>
+  </url>
 </urlset>
