@@ -16,14 +16,11 @@
  * Requires env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  * Never exposes service role to the client.
  */
-const { limitIp } = require('./_lib/supabase');
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
-
-  if (!(await limitIp(req, res, 'register', 10, 600))) return;
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

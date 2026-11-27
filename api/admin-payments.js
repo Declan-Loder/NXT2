@@ -4,6 +4,7 @@
  *
  * Body: {
  *   action: 'list' | 'approve' | 'reject' | 'note',
+ *   admin_key: string,                 // must match NXT_ADMIN_KEY env
  *   registration_id?: string,          // public NXT-R-… or uuid
  *   note?: string,
  *   tournament_id?: number,            // for list filter
@@ -11,14 +12,11 @@
  *   limit?: number
  * }
  *
- * Security: requires `Authorization: Bearer <Supabase access token>` of an
- * ACTIVE user holding the 'admin' or 'superadmin' role (checked server-side
- * against user_roles). The old shared NXT_ADMIN_KEY is no longer used.
+ * Security: simple shared admin key for Stage 1.
+ * Replace later with Supabase Auth + role claim when ready.
  *
- * Requires: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+ * Requires: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NXT_ADMIN_KEY
  */
-const { requireRole, ADMIN_ROLES, limitIp } = require('./_lib/supabase');
-
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -27,18 +25,22 @@ module.exports = async function handler(req, res) {
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const adminKey = process.env.NXT_ADMIN_KEY;
 
   if (!supabaseUrl || !serviceKey) {
     return res.status(500).json({ error: 'Service not configured.' });
   }
-
-  const admin = await requireRole(req, res, ADMIN_ROLES);
-  if (!admin) return;
-  if (!(await limitIp(req, res, 'admin-payments', 120, 60))) return;
+  if (!adminKey) {
+    return res.status(500).json({
+      error: 'Admin access is not configured. Set NXT_ADMIN_KEY on Vercel.',
+    });
+  }
 
   const body = req.body && typeof req.body === 'object' ? req.body : {};
-  // Server-derived actor for audit trails; never taken from the client.
-  body._actor = String(admin.user.email || admin.user.id);
+  const providedKey = String(body.admin_key || '').trim();
+  if (!providedKey || providedKey !== adminKey) {
+    return res.status(401).json({ error: 'Unauthorized.' });
+  }
 
   const action = String(body.action || '').toLowerCase();
   const clean = (v, max = 500) =>
@@ -165,7 +167,7 @@ async function mutateRegistration(req, res, supabaseUrl, serviceKey, body, actio
       registration_id: registration.id,
       action: 'admin_note',
       note,
-      actor: body._actor,
+      actor: 'admin',
     });
     return res.status(200).json({ success: true, message: 'Note saved.' });
   }
@@ -229,7 +231,7 @@ async function mutateRegistration(req, res, supabaseUrl, serviceKey, body, actio
         body: JSON.stringify({
           verification_status: 'accepted',
           reviewed_at: new Date().toISOString(),
-          reviewed_by: body._actor,
+          reviewed_by: 'admin',
         }),
       }
     );
@@ -240,7 +242,7 @@ async function mutateRegistration(req, res, supabaseUrl, serviceKey, body, actio
       old_status: oldStatus,
       new_status: 'paid',
       note: note || 'Admin approved',
-      actor: body._actor,
+      actor: 'admin',
     });
 
     return res.status(200).json({
@@ -303,7 +305,7 @@ async function mutateRegistration(req, res, supabaseUrl, serviceKey, body, actio
       body: JSON.stringify({
         verification_status: 'rejected',
         reviewed_at: new Date().toISOString(),
-        reviewed_by: body._actor,
+        reviewed_by: 'admin',
       }),
     }
   );
@@ -314,7 +316,7 @@ async function mutateRegistration(req, res, supabaseUrl, serviceKey, body, actio
     old_status: oldStatus,
     new_status: 'payment_rejected',
     note: note || 'Admin rejected',
-    actor: body._actor,
+    actor: 'admin',
   });
 
   return res.status(200).json({
