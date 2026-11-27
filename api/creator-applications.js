@@ -3,8 +3,10 @@
  * actions: apply | list | review
  *
  * apply: public (optional auth)
- * list / review: requires NXT_ADMIN_KEY
+ * list / review: requires a Bearer token of an active admin/superadmin
  */
+const { requireRole, ADMIN_ROLES, limitIp, rest, audit } = require('./_lib/supabase');
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -21,6 +23,13 @@ module.exports = async function handler(req, res) {
   const action = String(body.action || 'apply').toLowerCase();
   const clean = (v, max = 2000) =>
     typeof v === 'string' ? v.trim().slice(0, max) : '';
+  // Accept only https URLs (bare "twitch.tv/x" is upgraded); anything else -> null.
+  const httpsUrl = (v) => {
+    let t = clean(v, 300);
+    if (!t) return null;
+    if (!/^[a-z][a-z0-9+.-]*:/i.test(t)) t = 'https://' + t;
+    return /^https:\/\/[^\s]{1,290}$/i.test(t) ? t : null;
+  };
 
   // Optional auth user
   let authUserId = null;
@@ -42,6 +51,7 @@ module.exports = async function handler(req, res) {
 
   try {
     if (action === 'apply') {
+      if (!(await limitIp(req, res, 'creator-apply', 5, 3600))) return;
       const email = clean(body.email, 254).toLowerCase();
       const displayName = clean(body.display_name, 120);
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -59,10 +69,10 @@ module.exports = async function handler(req, res) {
         bio: clean(body.bio, 4000) || null,
         category: clean(body.category, 120) || null,
         interests: clean(body.interests, 500) || null,
-        twitch_url: clean(body.twitch_url, 300) || null,
-        youtube_url: clean(body.youtube_url, 300) || null,
-        tiktok_url: clean(body.tiktok_url, 300) || null,
-        instagram_url: clean(body.instagram_url, 300) || null,
+        twitch_url: httpsUrl(body.twitch_url),
+        youtube_url: httpsUrl(body.youtube_url),
+        tiktok_url: httpsUrl(body.tiktok_url),
+        instagram_url: httpsUrl(body.instagram_url),
         other_links: clean(body.other_links, 500) || null,
         status: 'pending',
       };
@@ -96,11 +106,9 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Admin actions
-    const adminKey = process.env.NXT_ADMIN_KEY;
-    if (!adminKey || String(body.admin_key || '') !== adminKey) {
-      return res.status(401).json({ error: 'Unauthorized.' });
-    }
+    // Admin actions (role checked server-side; no shared key)
+    const admin = await requireRole(req, res, ADMIN_ROLES);
+    if (!admin) return;
 
     if (action === 'list') {
       const status = clean(body.status, 40);
@@ -158,6 +166,7 @@ module.exports = async function handler(req, res) {
             status: decision,
             admin_notes: note || app.admin_notes,
             reviewed_at: new Date().toISOString(),
+            reviewed_by: admin.user.id,
           }),
         }
       );
@@ -206,7 +215,25 @@ module.exports = async function handler(req, res) {
               verification_status: 'approved',
             }),
           });
+
+          await rest('rpc/grant_achievement', {
+            method: 'POST',
+            body: { _user: app.user_id, _slug: 'creator' },
+          }).catch(() => {});
         }
+      }
+
+      if (app.user_id) {
+        await rest('rpc/notify', {
+          method: 'POST',
+          body: {
+            _user: app.user_id,
+            _type: 'creator_application',
+            _title: decision === 'approved' ? 'Your creator application was approved' : 'Your creator application was reviewed',
+            _body: decision === 'approved' ? 'Welcome to the NXT creator network.' : (note || null),
+            _link: 'creator-dashboard.html',
+          },
+        }).catch(() => {});
       }
 
       await fetch(`${supabaseUrl}/rest/v1/audit_logs`, {
@@ -217,6 +244,7 @@ module.exports = async function handler(req, res) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          actor_id: admin.user.id,
           action: `creator_application_${decision}`,
           entity_type: 'creator_application',
           entity_id: id,

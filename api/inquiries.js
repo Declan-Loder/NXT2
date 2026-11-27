@@ -1,3 +1,4 @@
+const { limitIp } = require('./_lib/supabase');
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -5,6 +6,8 @@ module.exports = async function handler(req, res) {
       error: 'Method not allowed'
     });
   }
+
+  if (!(await limitIp(req, res, 'inquiry', 5, 600))) return;
 
   const apiKey = process.env.RESEND_API_KEY;
 
