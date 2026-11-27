@@ -10,7 +10,7 @@ A static, multi-page community website for NXT: a South African creator network 
 - `sponsors.html` — brand/sponsorship page (form → `/api/inquiries`)
 - `tournaments.html` — standings (`data.js`) and Supabase tournament listings/registration
 - `player-login.html` / `player-dashboard.html` — player auth + my tournaments
-- `admin.html` — payment registration admin (NXT_ADMIN_KEY)
+- `admin.html` — admin console (overview, reports, disputes, users, payments, creator applications); role-based sign-in
 - `shop.html` / `checkout.html` — NXT Supply **Coming Soon** (merch video + product preview; cart locked until drop)
 
 ## Deployment
@@ -25,7 +25,6 @@ Upload the contents of this folder to the GitHub repository connected to Vercel.
 | `PAYSTACK_SECRET_KEY` | Paystack secret key (card payments) |
 | `SUPABASE_URL` | Supabase project URL (server-side) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-side DB + storage access — **never** put in frontend |
-| `NXT_ADMIN_KEY` | Shared secret for `/api/admin-payments` (Stage 1 admin) |
 | `NXT_BANK_NAME` | EFT display: bank name |
 | `NXT_BANK_ACCOUNT_NAME` | EFT display: account name |
 | `NXT_BANK_ACCOUNT_NUMBER` | EFT display: account number |
@@ -55,7 +54,9 @@ Run `supabase/schema.sql` in the Supabase SQL Editor. It creates / extends:
 | `POST /api/payments-eft` | Upload EFT proof (base64), set status `pending_verification` |
 | `POST /api/paystack-initialize` | Start Paystack checkout (existing) |
 | `POST /api/paystack-verify` | Verify card payment server-side; mark registration `paid` |
-| `POST /api/admin-payments` | Admin list / approve / reject / note (requires `NXT_ADMIN_KEY`) |
+| `POST /api/admin-payments` | Admin list / approve / reject / note (Bearer token of an admin) |
+| `POST /api/admin-users` | Search / suspend / ban / role / verify (staff; rank rules enforced server-side) |
+| `GET /sitemap.xml`, `GET /robots.txt` | Generated from the request host and database |
 
 ### Payment statuses
 `awaiting_payment` → `payment_submitted` / `pending_verification` → `paid` | `payment_rejected` | `cancelled` | `refunded`
@@ -90,10 +91,15 @@ Registration form UX, checkout panels, and admin dashboard UI are next. Backend 
 2. **Supabase Auth** — URL + anon key in `app.js`; enable Email provider; set Site URL + redirects.
 3. **Supabase schema** — run `supabase/schema.sql`; set service role + bank env vars.
 4. **Paystack** — set `PAYSTACK_SECRET_KEY` for card path.
-5. **Admin key** — set `NXT_ADMIN_KEY` before using `/api/admin-payments`.
+5. **Admin access** — grant yourself the `admin` role in `user_roles` (see DEPLOY.md), then sign in and open `/admin`.
 
 ## Motion and accessibility
 Scroll reveal animations use IntersectionObserver and respect `prefers-reduced-motion`.
 
 
 See **PLATFORM.md** for the full audit, schema order, and roadmap.
+
+## Platform v3 pages
+`discover`, `profile`, `communities`, `teams`, `games`, `leaderboards`, `challenges` (ranked 1v1), `messages`, `notifications`,
+`settings`, `reset-password`, `tournament` (detail) and `tournaments` (hub). Shared client code lives in `js/`.
+See **UPGRADE_REPORT.md** for what changed, what is untested, and what is still to build.

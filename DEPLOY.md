@@ -4,11 +4,15 @@ Follow this order. Do not skip steps.
 
 ## 1. Supabase (SQL Editor — run in order)
 
-1. `supabase/schema.sql` — tournaments, registrations, payments, proofs, audit
-   - If you already had an old `registrations` table and hit `payment_status does not exist`, run `supabase/migrate-existing-registrations.sql` first, then continue.  
+1. `supabase/schema.sql` — tournaments, registrations, payments, proofs, audit  
 2. `supabase/platform-v2.sql` — profiles, roles, games, creator apps, user_id on registrations  
 3. `supabase/fixtures.sql` — matches, standings  
-4. Optional: `supabase/seed-demo.sql` — sample open tournament for testing  
+4. `supabase/hardening.sql` — **security fixes to the tables above (run before going live)**  
+5. `supabase/platform-v3.sql` — follows, communities, teams, ranked matches, leaderboards, XP/achievements, messaging, moderation, search, media bucket  
+6. Optional: `supabase/seed-demo.sql` — sample open tournament for testing  
+
+> The SQL files are idempotent and additive. Run them in a **staging** Supabase project first; they were
+> written without access to a live database and have not been executed by the author (see UPGRADE_REPORT.md).
 
 **Auth settings**
 
@@ -37,7 +41,6 @@ ON CONFLICT DO NOTHING;
 | `SUPABASE_URL` | Yes |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes (server only) |
 | `PAYSTACK_SECRET_KEY` | For card payments |
-| `NXT_ADMIN_KEY` | Admin panel + payment approve |
 | `NXT_BANK_NAME` | EFT display |
 | `NXT_BANK_ACCOUNT_NAME` | EFT display |
 | `NXT_BANK_ACCOUNT_NUMBER` | EFT display |
@@ -53,6 +56,13 @@ In `app.js`, confirm:
 - `SUPABASE_URL` matches your project  
 - `SUPABASE_ANON_KEY` is the **anon/public** key (not service role)  
 
+**Optional — Social login.** Enable Google / Discord / Twitch in Supabase → Authentication → Providers, then list them in
+`js/config.js` (`oauthProviders: ['google']`). Buttons only appear for providers you list. Xbox, PlayStation and Steam
+have no native Supabase provider and are not offered.
+
+**Auth settings to turn on:** Confirm email (email verification), and set Site URL + Redirect URLs to include
+`https://YOUR-DOMAIN/reset-password.html` (password recovery).
+
 ## 4. Smoke test (in order)
 
 1. Open homepage — featured tournaments load or empty state  
@@ -63,12 +73,16 @@ In `app.js`, confirm:
 6. Paid card → Paystack (test key) → return → paid  
 7. Creator apply → admin approve → creator dashboard → create tournament → open  
 8. Add fixture → record result → appears on tournament detail  
+9. Two accounts: follow, message request → accept, challenge → accept → submit result → confirm → leaderboard updates  
+10. Create community and team; invite by username; report content; resolve it in `/admin`  
+11. Automated UI smoke test (needs Python + Playwright): `python tests/smoke.py`  
 
 ## 5. Security reminders
 
 - Never put service role key in HTML/JS  
 - Never commit `.env` with secrets  
-- Rotate `NXT_ADMIN_KEY` if shared  
+- Admin access is role-based (`user_roles`), not a shared key. `NXT_ADMIN_KEY` is no longer used and can be deleted from Vercel.  
+- Rotate the Supabase service-role key if it was ever shared or committed  
 
 ## 6. Git / Vercel
 

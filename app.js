@@ -150,18 +150,15 @@ function closeMenu() {
   document.body.style.overflow = '';
 }
 
-function escapeHtml(s) {
-  return String(s ?? '').replace(
-    /[&<>"']/g,
-    (c) =>
-      ({
-        '&': '&',
-        '<': '<',
-        '>': '>',
-        '"': '"',
-        "'": '&#39;',
-      })[c]
-  );
+async function getAccessToken() {
+  if (!supabaseClient) return null;
+  const { data } = await supabaseClient.auth.getSession();
+  return data?.session?.access_token || null;
+}
+
+function escapeHtml(value) {
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  return String(value ?? '').replace(/[&<>"']/g, (c) => map[c]);
 }
 
 function safeJs(s) {
@@ -169,9 +166,10 @@ function safeJs(s) {
 }
 
 // =====================================================
-// PAYSTACK (tournaments / optional card). Shop merch = EFT
-// via /api/shop-orders (checkout.html handles that flow).
+// PAYSTACK (server-side initialize + verify)
+// Secret key never leaves Vercel. Shop stays Coming Soon.
 // =====================================================
+const SHOP_PAYMENTS_LIVE = false; // flip to true when merch drop goes live
 
 async function startPaystackPayment({ type, email, amount, metadata, callbackPath }) {
   const origin = location.origin;
@@ -204,24 +202,60 @@ async function startPaystackPayment({ type, email, amount, metadata, callbackPat
     throw new Error(payload.error || 'Could not start Paystack payment.');
   }
 
-  if (type === 'tournament' && metadata) {
-    try {
-      sessionStorage.setItem(
-        'nxt_pending_registration',
-        JSON.stringify({ ...metadata, email, amount, reference: payload.reference })
-      );
-    } catch {}
-  }
-
   location.href = payload.authorization_url;
 }
 
-// Legacy names — shop checkout is EFT in checkout.html
 async function handlePaystackCheckout(e) {
   e.preventDefault();
-  notice('Shop checkout uses EFT. Reload checkout.html if you still see this.');
+  if (!SHOP_PAYMENTS_LIVE) {
+    notice('NXT Supply is still Coming Soon. Checkout unlocks with the first drop.');
+    return false;
+  }
+  if (!getCart().length) {
+    notice('Your cart is empty. Add some items first.');
+    return false;
+  }
+
+  const form = e.target;
+  const btn = form.querySelector('[type="submit"]');
+  const email = form.querySelector('[name="email"]')?.value?.trim();
+  const name = form.querySelector('[name="name"]')?.value?.trim();
+  const phone = form.querySelector('[name="phone"]')?.value?.trim();
+  const address = form.querySelector('[name="address"]')?.value?.trim();
+  const notes = form.querySelector('[name="notes"]')?.value?.trim() || '';
+
+  if (!email || !name || !phone || !address) {
+    notice('Please fill in all required fields.');
+    return false;
+  }
+
+  const cart = getCart();
+  const amount = cartTotal();
+  if (btn) btn.disabled = true;
+
+  try {
+    await startPaystackPayment({
+      type: 'shop',
+      email,
+      amount,
+      metadata: {
+        customer_name: name,
+        phone,
+        address,
+        notes,
+        items: cart.map((i) => `${i.qty}x ${i.name}`).join(', '),
+        cart_total: amount,
+      },
+      callbackPath: '/checkout.html',
+    });
+  } catch (err) {
+    notice(err.message || 'Payment could not start.');
+    if (btn) btn.disabled = false;
+  }
   return false;
 }
+
+// Backwards-compatible name used by checkout.html
 function handlePayFastCheckout(e) {
   return handlePaystackCheckout(e);
 }
@@ -296,44 +330,8 @@ async function checkPaymentReturn() {
       return;
     }
 
-    // Client-side fallback insert if service role not configured
-    let pending = null;
-    try {
-      pending = JSON.parse(sessionStorage.getItem('nxt_pending_registration') || 'null');
-    } catch {
-      pending = null;
-    }
-
-    if (pending && supabaseClient) {
-      const { error } = await supabaseClient.from('registrations').insert({
-        tournament_id: Number(pending.tournament_id),
-        player_name: String(pending.player_name || '').trim(),
-        gamertag: String(pending.gamertag || '').trim(),
-        platform: pending.platform || 'PC',
-        email: pending.email || payload.email,
-        payment_reference: ref,
-        payment_status: 'paid',
-        amount_paid: payload.amount,
-      });
-      if (error) {
-        // Columns may not exist yet — try minimal insert
-        const { error: err2 } = await supabaseClient.from('registrations').insert({
-          tournament_id: Number(pending.tournament_id),
-          player_name: String(pending.player_name || '').trim(),
-          gamertag: String(pending.gamertag || '').trim(),
-          platform: pending.platform || 'PC',
-        });
-        if (err2) throw err2;
-      }
-      try {
-        sessionStorage.removeItem('nxt_pending_registration');
-      } catch {}
-      notice('Payment successful — you are registered!');
-      loadTournaments?.();
-      return;
-    }
-
-    notice('Payment successful!');
+    // Registrations are only ever confirmed server-side (/api/paystack-verify).
+    notice('Payment received. If your registration does not show as paid shortly, contact support with your reference.');
   } catch (err) {
     notice(err.message || 'Could not verify payment.');
   }
@@ -1245,6 +1243,14 @@ function initInquiryForms() {
 // PLAYER AUTH + DASHBOARD + ADMIN
 // =====================================================
 
+// Redirect an authenticated player to their dashboard.
+function playerAuthRedirect() {
+  // ?next= is honoured only for same-site relative .html targets (no open redirect).
+  const next = new URLSearchParams(location.search).get('next') || '';
+  const ok = /^[a-z0-9-]+\.html(\?[\w=&%.-]*)?$/i.test(next);
+  window.location.assign(ok ? next : 'player-dashboard.html');
+}
+
 function initPlayerAuthPage() {
   const form = document.getElementById('player-auth-form');
   if (!form || !supabaseClient) {
@@ -1296,6 +1302,8 @@ function initPlayerAuthPage() {
               full_name: String(values.full_name || '').trim(),
               display_name: String(values.username || values.full_name || '').trim(),
               username: String(values.username || '').trim(),
+              gamertag: String(values.gamertag || '').trim(),
+              platform: String(values.platform || '').trim(),
             },
           },
         });
@@ -1304,14 +1312,7 @@ function initPlayerAuthPage() {
         const userId = data.user?.id;
         if (userId) {
           // Best-effort profile + player_profile (trigger may already create profile)
-          await supabaseClient.from('profiles').upsert({
-            id: userId,
-            email,
-            full_name: String(values.full_name || '').trim() || null,
-            display_name:
-              String(values.username || values.full_name || '').trim() || null,
-            username: String(values.username || '').trim() || null,
-          });
+          // profiles row + role are created by the handle_new_user trigger
           await supabaseClient.from('player_profiles').upsert({
             user_id: userId,
             gamertag: String(values.gamertag || '').trim() || null,
@@ -1329,11 +1330,25 @@ function initPlayerAuthPage() {
           return;
         }
       } else {
-        const { error } = await supabaseClient.auth.signInWithPassword({
+        const { data: signInData, error } = await supabaseClient.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
+
+        const signedInUser = signInData?.user;
+        if (signedInUser?.id) {
+          // Ensure confirmed-email accounts also have a player profile row.
+          // ignoreDuplicates preserves any existing gamertag/platform details.
+          const { error: playerProfileError } = await supabaseClient
+            .from('player_profiles')
+            .upsert(
+              { user_id: signedInUser.id },
+              { onConflict: 'user_id', ignoreDuplicates: true }
+            );
+          if (playerProfileError) throw playerProfileError;
+        }
+
         playerAuthRedirect();
         return;
       }
@@ -1380,11 +1395,7 @@ async function initPlayerDashboard() {
   if (emailEl) emailEl.textContent = user.email || '';
 
   // Profile
-  const { data: profile } = await supabaseClient
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle();
+  const { data: profile } = await supabaseClient.rpc('get_my_profile');
 
   const { data: player } = await supabaseClient
     .from('player_profiles')
@@ -1472,13 +1483,14 @@ async function initPlayerDashboard() {
       const values = Object.fromEntries(new FormData(profileForm).entries());
       if (status) status.textContent = 'Saving…';
       try {
-        const { error: pErr } = await supabaseClient.from('profiles').upsert({
-          id: user.id,
-          email: user.email,
-          display_name: String(values.display_name || '').trim() || null,
-          username: String(values.username || '').trim() || null,
-          discord_username: String(values.discord_username || '').trim() || null,
-        });
+        const { error: pErr } = await supabaseClient
+          .from('profiles')
+          .update({
+            display_name: String(values.display_name || '').trim() || null,
+            username: String(values.username || '').trim() || null,
+            discord_username: String(values.discord_username || '').trim() || null,
+          })
+          .eq('id', user.id);
         if (pErr) throw pErr;
         const { error: plErr } = await supabaseClient.from('player_profiles').upsert({
           user_id: user.id,
@@ -1507,20 +1519,19 @@ function initAdminPaymentsPage() {
   let lastRows = [];
 
   async function load() {
-    const key = document.getElementById('admin-key')?.value?.trim();
+    const key = await getAccessToken();
     const filter = document.getElementById('admin-status-filter')?.value || '';
     if (!key) {
-      if (statusEl) statusEl.textContent = 'Enter the admin key.';
+      if (statusEl) statusEl.textContent = 'Sign in with an admin account first.';
       return;
     }
     if (statusEl) statusEl.textContent = 'Loading…';
     try {
       const res = await fetch('/api/admin-payments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
         body: JSON.stringify({
           action: 'list',
-          admin_key: key,
           payment_status: filter || undefined,
           limit: 100,
         }),
@@ -1586,10 +1597,9 @@ function initAdminPaymentsPage() {
         try {
           const res = await fetch('/api/admin-payments', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
             body: JSON.stringify({
               action,
-              admin_key: key,
               registration_id: id,
             }),
           });
@@ -1669,11 +1679,7 @@ async function prefillRegistrationFromSession() {
     if (emailInput && !emailInput.value) {
       emailInput.value = session.user.email || '';
     }
-    const { data: profile } = await supabaseClient
-      .from('profiles')
-      .select('display_name,full_name,discord_username')
-      .eq('id', uid)
-      .maybeSingle();
+    const { data: profile } = await supabaseClient.rpc('get_my_profile');
     const { data: player } = await supabaseClient
       .from('player_profiles')
       .select('gamertag,ea_id,primary_platform')
@@ -1722,11 +1728,7 @@ async function initCreatorDashboardV2() {
   const token = session.access_token;
 
   // Ensure profile + optional creator role display
-  const { data: profile } = await supabaseClient
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle();
+  const { data: profile } = await supabaseClient.rpc('get_my_profile');
 
   const { data: rolesData } = await supabaseClient
     .from('user_roles')
@@ -2341,20 +2343,19 @@ function initAdminCreatorApplications() {
   if (!loadBtn || !list) return;
 
   async function load() {
-    const key = document.getElementById('admin-key')?.value?.trim();
+    const key = await getAccessToken();
     const filter = document.getElementById('creator-app-filter')?.value ?? 'pending';
     if (!key) {
-      if (statusEl) statusEl.textContent = 'Enter the admin key above.';
+      if (statusEl) statusEl.textContent = 'Sign in with an admin account first.';
       return;
     }
     if (statusEl) statusEl.textContent = 'Loading…';
     try {
       const res = await fetch('/api/creator-applications', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
         body: JSON.stringify({
           action: 'list',
-          admin_key: key,
           status: filter || undefined,
         }),
       });
@@ -2393,10 +2394,9 @@ function initAdminCreatorApplications() {
           try {
             const res2 = await fetch('/api/creator-applications', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
               body: JSON.stringify({
                 action: 'review',
-                admin_key: key,
                 application_id: btn.getAttribute('data-id'),
                 decision: btn.getAttribute('data-creator-decision'),
               }),
@@ -2420,111 +2420,8 @@ function initAdminCreatorApplications() {
   loadBtn.addEventListener('click', load);
 }
 
-function initAdminShopOrders() {
-  const loadBtn = document.getElementById('admin-shop-load-btn');
-  const list = document.getElementById('admin-shop-list');
-  const statusEl = document.getElementById('admin-shop-status');
-  if (!loadBtn || !list) return;
 
-  async function load() {
-    const key = document.getElementById('admin-key')?.value?.trim();
-    const filter = document.getElementById('admin-shop-status-filter')?.value || '';
-    if (!key) {
-      if (statusEl) statusEl.textContent = 'Enter the admin key above.';
-      return;
-    }
-    if (statusEl) statusEl.textContent = 'Loading…';
-    try {
-      const res = await fetch('/api/admin-shop-orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'list',
-          admin_key: key,
-          payment_status: filter || undefined,
-        }),
-      });
-      const payload = await res.json();
-      if (!res.ok) throw new Error(payload.error || 'Load failed');
-      const rows = payload.orders || [];
-      const rev = document.getElementById('admin-shop-revenue');
-      if (rev) rev.textContent = 'R ' + Number(payload.revenue || 0).toFixed(2);
-      if (statusEl) statusEl.textContent = `${rows.length} order(s)`;
-      if (!rows.length) {
-        list.innerHTML = '<p class="muted">No shop orders for this filter.</p>';
-        return;
-      }
-      list.innerHTML = rows
-        .map((o) => {
-          const items = Array.isArray(o.items)
-            ? o.items
-                .map((i) => `${i.qty}× ${escapeHtml(i.name || '')}`)
-                .join('<br>')
-            : '';
-          const canReview = ['pending_verification', 'awaiting_payment'].includes(
-            o.payment_status
-          );
-          return `
-        <article class="panel admin-reg-card">
-          <div class="tag">${escapeHtml(String(o.payment_status || '').toUpperCase())}</div>
-          <h3 style="margin:8px 0 4px;font-size:16px">${escapeHtml(o.order_number || '')}</h3>
-          <p class="muted" style="margin:0;font-size:13px">
-            ${escapeHtml(o.customer_name || '')} · ${escapeHtml(o.email || '')} · ${escapeHtml(o.phone || '')}<br>
-            R ${Number(o.total_amount || 0).toFixed(2)} · ${escapeHtml(o.created_at || '').slice(0, 19)}
-          </p>
-          <p style="margin:10px 0 0;font-size:13px">${items}</p>
-          <p class="muted" style="margin:8px 0 0;font-size:12px">${escapeHtml(o.address || '')}</p>
-          ${
-            o.proof_file_name
-              ? `<p class="muted" style="margin:6px 0 0;font-size:12px">Proof: ${escapeHtml(o.proof_file_name)}</p>`
-              : ''
-          }
-          ${
-            canReview
-              ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-                   <button type="button" class="button" data-shop-action="approve" data-order="${escapeHtml(o.order_number)}">Mark paid</button>
-                   <button type="button" class="outline" data-shop-action="reject" data-order="${escapeHtml(o.order_number)}">Reject</button>
-                 </div>`
-              : ''
-          }
-        </article>`;
-        })
-        .join('');
 
-      list.querySelectorAll('[data-shop-action]').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          const action = btn.getAttribute('data-shop-action');
-          const order_number = btn.getAttribute('data-order');
-          const keyNow = document.getElementById('admin-key')?.value?.trim();
-          if (!keyNow || !order_number) return;
-          btn.disabled = true;
-          try {
-            const res2 = await fetch('/api/admin-shop-orders', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action,
-                admin_key: keyNow,
-                order_number,
-              }),
-            });
-            const p2 = await res2.json();
-            if (!res2.ok) throw new Error(p2.error || 'Action failed');
-            notice(p2.message || 'Updated');
-            load();
-          } catch (err) {
-            notice(err.message || 'Action failed');
-            btn.disabled = false;
-          }
-        });
-      });
-    } catch (err) {
-      if (statusEl) statusEl.textContent = err.message || 'Load failed';
-    }
-  }
-
-  loadBtn.addEventListener('click', load);
-}
 
 async function initHomePage() {
   // Featured tournaments from Supabase

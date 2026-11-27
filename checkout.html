@@ -5,98 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#08090B">
   <title>Checkout — NXT Supply</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <style>
-    .checkout-steps {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 22px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-    .checkout-steps span {
-      padding: 6px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-    }
-    .checkout-steps span.active {
-      color: var(--lime);
-      border-color: color-mix(in srgb, var(--lime) 50%, transparent);
-      background: rgba(200,245,42,.08);
-    }
-    .checkout-steps span.done {
-      color: var(--text);
-      border-color: var(--blue);
-    }
-    .bank-card {
-      background: linear-gradient(160deg, rgba(21,35,56,.94), rgba(10,16,28,.98));
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 18px 20px;
-      margin: 16px 0;
-    }
-    .bank-card h3 { margin: 0 0 12px; font-size: 16px; }
-    .bank-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 8px 0;
-      border-bottom: 1px solid var(--line);
-      font-size: 14px;
-    }
-    .bank-row:last-child { border-bottom: none; }
-    .bank-row span:first-child { color: var(--muted); }
-    .bank-row strong {
-      font-variant-numeric: tabular-nums;
-      letter-spacing: .02em;
-      text-align: right;
-    }
-    .order-ref-big {
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: .04em;
-      color: var(--lime);
-      margin: 4px 0 12px;
-    }
-    .step-panel { display: none; }
-    .step-panel.active { display: block; }
-    #proof-file-label {
-      display: block;
-      padding: 14px;
-      border: 1px dashed var(--line);
-      border-radius: 12px;
-      text-align: center;
-      cursor: pointer;
-      color: var(--muted);
-      font-size: 13px;
-    }
-    #proof-file-label:hover { border-color: var(--blue); color: var(--text); }
-  </style>
 </head>
 <body>
   <div class="wrap">
-    <header class="nav">
+        <header class="nav">
       <a class="brand" href="index.html">NXT<span>.</span></a>
-      <nav class="links">
-        <a href="index.html">Home</a>
+      <nav class="links" aria-label="Main">
         <a href="tournaments.html">Tournaments</a>
+        <a href="discover.html">Discover</a>
+        <a href="leaderboards.html">Leaderboards</a>
+        <a href="communities.html">Communities</a>
         <a href="creators.html">Creators</a>
-        <a href="community.html">Community</a>
         <a href="about.html">About</a>
-        <a href="shop.html" class="active">Shop</a>
+        <a href="shop.html">Shop</a>
       </nav>
       <div class="navright">
-        <button class="button outline cart-btn" type="button" onclick="openCart()" aria-label="Open cart">
-          Cart
-          <span class="cart-count" style="display:none">0</span>
-        </button>
         <a class="button outline" href="player-login.html">Login</a>
         <a class="button" href="player-login.html">Register</a>
         <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
@@ -108,10 +35,15 @@
     <div class="mobile-menu" id="mobile-menu">
       <a href="index.html" onclick="closeMenu()">Home</a>
       <a href="tournaments.html" onclick="closeMenu()">Tournaments</a>
+      <a href="discover.html" onclick="closeMenu()">Discover</a>
+      <a href="leaderboards.html" onclick="closeMenu()">Leaderboards</a>
+      <a href="communities.html" onclick="closeMenu()">Communities</a>
       <a href="creators.html" onclick="closeMenu()">Creators</a>
-      <a href="community.html" onclick="closeMenu()">Community</a>
+      <a href="teams.html" onclick="closeMenu()">Teams</a>
+      <a href="challenges.html" onclick="closeMenu()">Matches</a>
       <a href="about.html" onclick="closeMenu()">About</a>
       <a href="shop.html" onclick="closeMenu()">Shop</a>
+      <a href="community.html" onclick="closeMenu()">NXT Community</a>
       <a href="player-login.html" onclick="closeMenu()">Login / Register</a>
       <a href="sponsors.html" onclick="closeMenu()">Partnerships</a>
       <a href="https://discord.gg/Bxsw3Aam2" target="_blank" rel="noreferrer" onclick="closeMenu()">Discord</a>
@@ -121,104 +53,37 @@
       <div class="page-hero">
         <div class="kicker">Checkout</div>
         <h1>Complete your order</h1>
-        <p class="muted" style="max-width:480px">
-          Pay by EFT using your unique order number as the reference, then upload proof. We’ll mark the order paid once funds clear.
-        </p>
-      </div>
-
-      <div class="checkout-steps" id="checkout-steps">
-        <span class="active" data-step="1">1 · Details</span>
-        <span data-step="2">2 · Pay (EFT)</span>
-        <span data-step="3">3 · Proof</span>
-        <span data-step="4">4 · Done</span>
+        <p class="muted" style="max-width:420px">Shop is still Coming Soon. Paystack is wired and will unlock with the first merch drop.</p>
       </div>
 
       <section class="section" style="border-top:none;padding-top:8px">
         <div class="checkout-grid">
-          <!-- STEP 1: details -->
-          <div class="step-panel active" id="step-details">
-            <form id="shop-checkout-form" onsubmit="return handleShopCheckout(event)">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Full name</label>
-                  <input type="text" name="name" required placeholder="Your name" autocomplete="name">
-                </div>
-                <div class="form-group">
-                  <label>Phone / WhatsApp</label>
-                  <input type="tel" name="phone" required placeholder="+27 ..." autocomplete="tel">
-                </div>
+          <form id="paystack-checkout-form" onsubmit="return handlePaystackCheckout(event)">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Full name</label>
+                <input type="text" id="pf-name" name="name" required placeholder="Your name">
               </div>
               <div class="form-group">
-                <label>Email</label>
-                <input type="email" name="email" required placeholder="you@email.com" autocomplete="email">
+                <label>Phone / WhatsApp</label>
+                <input type="tel" id="pf-phone" name="phone" required placeholder="+27 ...">
               </div>
-              <div class="form-group">
-                <label>Delivery address</label>
-                <textarea name="address" rows="3" required placeholder="Street, suburb, city, postal code"></textarea>
-              </div>
-              <div class="form-group">
-                <label>Notes (optional)</label>
-                <textarea name="notes" rows="2" placeholder="Gate code, preferred contact time…"></textarea>
-              </div>
-              <button type="submit" class="button" style="width:100%;padding:14px" id="checkout-submit-btn">
-                Place order &amp; get banking details ↗
-              </button>
-              <p class="form-status" id="checkout-form-status"></p>
-            </form>
-          </div>
-
-          <!-- STEP 2: bank details -->
-          <div class="step-panel" id="step-bank">
-            <p class="muted" style="margin-top:0">Your order is reserved. Transfer the exact amount and use the order number as reference.</p>
-            <div class="order-ref-big" id="display-order-number">—</div>
-            <div class="bank-card">
-              <h3>Banking details</h3>
-              <div class="bank-row"><span>Bank</span><strong id="bank-name">—</strong></div>
-              <div class="bank-row"><span>Account name</span><strong id="bank-account-name">—</strong></div>
-              <div class="bank-row"><span>Account number</span><strong id="bank-account-number">—</strong></div>
-              <div class="bank-row"><span>Branch code</span><strong id="bank-branch">—</strong></div>
-              <div class="bank-row"><span>Reference</span><strong id="bank-reference">—</strong></div>
-              <div class="bank-row"><span>Amount</span><strong id="bank-amount">—</strong></div>
             </div>
-            <p class="muted" style="font-size:13px" id="bank-instructions">
-              Use the order number exactly as the payment reference so we can match your transfer.
-            </p>
-            <button type="button" class="button" style="width:100%;padding:14px;margin-top:8px" onclick="goToProofStep()">
-              I’ve paid — upload proof ↗
-            </button>
-          </div>
-
-          <!-- STEP 3: proof upload -->
-          <div class="step-panel" id="step-proof">
-            <p class="muted" style="margin-top:0">
-              Upload a clear screenshot or PDF of your payment confirmation. Order:
-              <strong id="proof-order-label">—</strong>
-            </p>
-            <form id="shop-proof-form" onsubmit="return handleShopProof(event)">
-              <div class="form-group">
-                <label>Proof of payment</label>
-                <label id="proof-file-label" for="proof-file">
-                  Tap to choose image or PDF (max 5 MB)
-                </label>
-                <input type="file" id="proof-file" accept="image/jpeg,image/png,image/webp,application/pdf" required style="display:none">
-              </div>
-              <button type="submit" class="button" style="width:100%;padding:14px" id="proof-submit-btn">
-                Submit proof ↗
-              </button>
-              <p class="form-status" id="proof-form-status"></p>
-            </form>
-          </div>
-
-          <!-- STEP 4: done -->
-          <div class="step-panel" id="step-done">
-            <h3 style="margin-top:0">Order pending verification</h3>
-            <p class="muted">
-              We’ve received your proof for <strong id="done-order-number">—</strong>.
-              Status is <strong>pending</strong> until we confirm funds in the account.
-              You’ll hear from us by email when it’s accepted.
-            </p>
-            <a class="button" href="shop.html" style="display:inline-block;margin-top:12px">Back to shop</a>
-          </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="pf-email" name="email" required placeholder="you@email.com">
+            </div>
+            <div class="form-group">
+              <label>Delivery address</label>
+              <textarea id="pf-address" name="address" rows="3" required placeholder="Street, suburb, city, postal code"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Size / colour notes (optional)</label>
+              <textarea id="pf-notes" name="notes" rows="2" placeholder="e.g. Hoodie Size L, Cap one-size"></textarea>
+            </div>
+            <button type="submit" class="button" style="width:100%;padding:14px" id="pay-btn">Pay with Paystack ↗</button>
+            <p class="muted" style="margin-top:12px;font-size:12px">When the shop goes live, you will be redirected to Paystack to pay in ZAR.</p>
+          </form>
 
           <div class="panel order-summary">
             <h3 style="margin-top:0">Your order</h3>
@@ -252,209 +117,14 @@
         <span>Total</span>
         <span id="cart-total-value">R 0.00</span>
       </div>
-      <a class="button" href="checkout.html" style="width:100%;display:block;text-align:center" onclick="closeCart()">Go to Checkout ↗</a>
+      <button class="button" style="width:100%" onclick="closeCart()">Continue checkout</button>
     </div>
   </div>
 
   <div class="toast" id="toast" role="status"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
-  <script>
-    let currentShopOrder = null;
-
-    function setCheckoutStep(n) {
-      document.querySelectorAll('.step-panel').forEach((el) => el.classList.remove('active'));
-      const map = { 1: 'step-details', 2: 'step-bank', 3: 'step-proof', 4: 'step-done' };
-      document.getElementById(map[n])?.classList.add('active');
-      document.querySelectorAll('#checkout-steps span').forEach((s) => {
-        const step = Number(s.dataset.step);
-        s.classList.toggle('active', step === n);
-        s.classList.toggle('done', step < n);
-      });
-    }
-
-    function fillBankDetails(bank, order) {
-      const set = (id, v) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = v || '—';
-      };
-      set('display-order-number', order.order_number);
-      set('bank-name', bank?.bank_name || 'Contact NXT for bank details');
-      set('bank-account-name', bank?.account_name);
-      set('bank-account-number', bank?.account_number);
-      set('bank-branch', bank?.branch_code);
-      set('bank-reference', bank?.reference || order.payment_reference || order.order_number);
-      set('bank-amount', 'R ' + Number(order.total_amount || 0).toFixed(2));
-      const inst = document.getElementById('bank-instructions');
-      if (inst && bank?.instructions) inst.textContent = bank.instructions;
-      set('proof-order-label', order.order_number);
-      set('done-order-number', order.order_number);
-    }
-
-    async function handleShopCheckout(e) {
-      e.preventDefault();
-      const form = e.target;
-      const btn = document.getElementById('checkout-submit-btn');
-      const status = document.getElementById('checkout-form-status');
-      const cart = getCart();
-      if (!cart.length) {
-        notice('Your cart is empty.');
-        return false;
-      }
-
-      const payload = {
-        name: form.name.value.trim(),
-        email: form.email.value.trim(),
-        phone: form.phone.value.trim(),
-        address: form.address.value.trim(),
-        notes: form.notes.value.trim(),
-        items: cart.map((i) => ({
-          id: i.id,
-          name: i.name,
-          price: Number(i.price),
-          qty: Number(i.qty) || 1,
-        })),
-      };
-
-      if (btn) btn.disabled = true;
-      if (status) status.textContent = 'Creating order…';
-
-      try {
-        const res = await fetch('/api/shop-orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.success) {
-          throw new Error(data.error || 'Could not create order.');
-        }
-
-        currentShopOrder = data.order;
-        try {
-          sessionStorage.setItem(
-            'nxt_shop_order',
-            JSON.stringify({ order: data.order, bank: data.bank_details })
-          );
-        } catch {}
-
-        fillBankDetails(data.bank_details, data.order);
-        setCheckoutStep(2);
-        notice('Order created — use the order number as your EFT reference.');
-        // Keep cart until proof submitted so summary stays visible; clear on done
-      } catch (err) {
-        if (status) status.textContent = err.message || 'Order failed.';
-        notice(err.message || 'Order failed.');
-      } finally {
-        if (btn) btn.disabled = false;
-      }
-      return false;
-    }
-
-    function goToProofStep() {
-      if (!currentShopOrder) {
-        try {
-          const saved = JSON.parse(sessionStorage.getItem('nxt_shop_order') || 'null');
-          if (saved?.order) {
-            currentShopOrder = saved.order;
-            fillBankDetails(saved.bank, saved.order);
-          }
-        } catch {}
-      }
-      if (!currentShopOrder) {
-        notice('Create an order first.');
-        setCheckoutStep(1);
-        return;
-      }
-      setCheckoutStep(3);
-    }
-
-    document.getElementById('proof-file')?.addEventListener('change', (ev) => {
-      const f = ev.target.files?.[0];
-      const label = document.getElementById('proof-file-label');
-      if (label) {
-        label.textContent = f
-          ? `${f.name} (${(f.size / 1024).toFixed(0)} KB)`
-          : 'Tap to choose image or PDF (max 5 MB)';
-      }
-    });
-
-    function fileToBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = String(reader.result || '');
-          const base64 = result.includes(',') ? result.split(',')[1] : result;
-          resolve(base64);
-        };
-        reader.onerror = () => reject(new Error('Could not read file.'));
-        reader.readAsDataURL(file);
-      });
-    }
-
-    async function handleShopProof(e) {
-      e.preventDefault();
-      const btn = document.getElementById('proof-submit-btn');
-      const status = document.getElementById('proof-form-status');
-      const fileInput = document.getElementById('proof-file');
-      const file = fileInput?.files?.[0];
-
-      if (!currentShopOrder) {
-        notice('Missing order. Start checkout again.');
-        return false;
-      }
-      if (!file) {
-        notice('Choose a proof file first.');
-        return false;
-      }
-
-      if (btn) btn.disabled = true;
-      if (status) status.textContent = 'Uploading proof…';
-
-      try {
-        const file_base64 = await fileToBase64(file);
-        const res = await fetch('/api/shop-orders-proof', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            order_number: currentShopOrder.order_number,
-            email: currentShopOrder.email,
-            file_name: file.name,
-            content_type: file.type || 'application/octet-stream',
-            file_base64,
-          }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.success) {
-          throw new Error(data.error || 'Could not submit proof.');
-        }
-
-        saveCart([]);
-        try {
-          sessionStorage.removeItem('nxt_shop_order');
-        } catch {}
-        setCheckoutStep(4);
-        notice('Proof submitted — order is pending verification.');
-      } catch (err) {
-        if (status) status.textContent = err.message || 'Upload failed.';
-        notice(err.message || 'Upload failed.');
-      } finally {
-        if (btn) btn.disabled = false;
-      }
-      return false;
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      if (typeof updateCartUI === 'function') updateCartUI();
-      // Resume mid-flow if page reloaded
-      try {
-        const saved = JSON.parse(sessionStorage.getItem('nxt_shop_order') || 'null');
-        if (saved?.order) {
-          currentShopOrder = saved.order;
-          fillBankDetails(saved.bank, saved.order);
-          setCheckoutStep(2);
-        }
-      } catch {}
-    });
-  </script>
+  <script src="js/config.js"></script>
+  <script src="js/nxt.js"></script>
 </body>
 </html>
